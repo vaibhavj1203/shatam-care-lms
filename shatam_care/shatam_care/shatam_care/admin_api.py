@@ -304,6 +304,25 @@ def create_student(email, full_name, mobile_no=None, password=None):
 
 
 @frappe.whitelist()
+def reset_password(user, password=None):
+	"""Set a learner's password on their behalf.
+
+	Learners in the field routinely lose credentials and often have no working
+	email for a reset link, so an admin/coordinator needs to be able to hand
+	them a new one directly. Returns the password so it can be shown once.
+	"""
+	check_admin()
+	if user in ("Administrator",):
+		frappe.throw(_("Refusing to reset the Administrator password from the API."))
+
+	new_password = password or random_string(10)
+	user_doc = frappe.get_doc("User", user)
+	user_doc.new_password = new_password
+	user_doc.save(ignore_permissions=True)
+	return {"user": user, "password": new_password}
+
+
+@frappe.whitelist()
 def enroll_student(course, member, student_group=None, preferred_language=None):
 	check_admin()
 	existing = frappe.db.get_value("LMS Enrollment", {"course": course, "member": member}, "name")
