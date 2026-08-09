@@ -1,0 +1,129 @@
+// Thin client for talking to the Frappe backend over its REST/RPC API using
+// token auth (api_key:api_secret), not session cookies — see
+// ../../PLAN.md section 5 and shatam_care/shatam_care/auth.py for why.
+
+export const FRAPPE_URL = process.env.NEXT_PUBLIC_FRAPPE_URL ?? "http://lms.localhost:8000";
+
+export type AuthToken = {
+	apiKey: string;
+	apiSecret: string;
+	user: string;
+	fullName: string;
+	roles: string[];
+};
+
+const TOKEN_STORAGE_KEY = "shatam_care_auth";
+
+export function saveToken(token: AuthToken) {
+	localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(token));
+}
+
+export function loadToken(): AuthToken | null {
+	if (typeof window === "undefined") return null;
+	const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
+	return raw ? (JSON.parse(raw) as AuthToken) : null;
+}
+
+export function clearToken() {
+	localStorage.removeItem(TOKEN_STORAGE_KEY);
+}
+
+class FrappeApiError extends Error {
+	constructor(
+		message: string,
+		public status: number,
+	) {
+		super(message);
+	}
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+	const token = loadToken();
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		...(options.headers as Record<string, string> | undefined),
+	};
+	if (token) {
+		headers["Authorization"] = `token ${token.apiKey}:${token.apiSecret}`;
+	}
+
+	const response = await fetch(`${FRAPPE_URL}${path}`, { ...options, headers });
+	if (!response.ok) {
+		const body = await response.json().catch(() => ({}));
+		throw new FrappeApiError(body.message ?? response.statusText, response.status);
+	}
+	const body = await response.json();
+	// Frappe wraps responses differently per endpoint family:
+	//   /api/method/*   -> { "message": <payload> }
+	//   /api/resource/* -> { "data":    <payload> }
+	// Unwrapping only `message` silently returned the `{data: ...}` wrapper for
+	// every resource call, so callers got an object where they expected a doc or
+	// an array (`rows.map is not a function`). Handle both.
+	return (body.message ?? body.data ?? body) as T;
+}
+
+export async function login(usr: string, pwd: string): Promise<AuthToken> {
+	const result = await request<{
+		api_key: string;
+		api_secret: string;
+		user: string;
+		full_name: string;
+		roles: string[];
+	}>("/api/method/shatam_care.shatam_care.auth.login_and_get_token", {
+		method: "POST",
+		body: JSON.stringify({ usr, pwd }),
+	});
+	const token: AuthToken = {
+		apiKey: result.api_key,
+		apiSecret: result.api_secret,
+		user: result.user,
+		fullName: result.full_name,
+		roles: result.roles,
+	};
+	saveToken(token);
+	return token;
+}
+
+export function callMethod<T>(method: string, params?: Record<string, unknown>): Promise<T> {
+	const isWrite = !!params;
+	return request<T>(`/api/method/${method}`, {
+		method: isWrite ? "POST" : "GET",
+		body: isWrite ? JSON.stringify(params) : undefined,
+	});
+}
+
+export function getDoc<T>(doctype: string, name: string): Promise<T> {
+	return request<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`);
+}
+
+export function getList<T>(
+	doctype: string,
+	options: { fields?: string[]; filters?: unknown[]; orderBy?: string; limit?: number } = {},
+): Promise<T[]> {
+	const params = new URLSearchParams();
+	if (options.fields) params.set("fields", JSON.stringify(options.fields));
+	if (options.filters) params.set("filters", JSON.stringify(options.filters));
+	if (options.orderBy) params.set("order_by", options.orderBy);
+	if (options.limit) params.set("limit_page_length", String(options.limit));
+	return request<T[]>(`/api/resource/${encodeURIComponent(doctype)}?${params.toString()}`);
+}
+
+export function createDoc<T>(doctype: string, data: Record<string, unknown>): Promise<T> {
+	return request<T>(`/api/resource/${encodeURIComponent(doctype)}`, {
+		method: "POST",
+		body: JSON.stringify(data),
+	});
+}
+
+export function updateDoc<T>(
+	doctype: string,
+	name: string,
+	data: Record<string, unknown>,
+): Promise<T> {
+	return request<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+		method: "PUT",
+		body: JSON.stringify(data),
+	});
+}
+
+export { FrappeApiError };

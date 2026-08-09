@@ -1,0 +1,35 @@
+# The lms app is NOT vendored — init.sh clones it (see LMS_REPO). Keeping a
+# local checkout here is fine and speeds up rebuilds, but it must never be
+# committed: it's ~330MB and identical to upstream frappe/lms.
+shatam-care-lms/
+
+# Created inside the container at /home/frappe/frappe-bench, but appears here
+# if anyone runs a native bench in this directory.
+frappe-bench/
+
+# Node / Next
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Env files — .env.local.example is committed as the template
+.env
+.env.*
+!.env.*.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Local tooling
+.claude/

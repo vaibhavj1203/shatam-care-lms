@@ -1,0 +1,57 @@
+[
+ {
+  "doctype": "Property Setter",
+  "doc_type": "LMS Course",
+  "field_name": "pricing_section",
+  "property": "hidden",
+  "property_type": "Check",
+  "value": "1",
+  "module": "Shatam Care",
+  "name": "LMS Course-pricing_section-hidden",
+  "doctype_or_field": "DocField"
+ },
+ {
+  "doctype": "Property Setter",
+  "doc_type": "LMS Course",
+  "field_name": "pricing_tab",
+  "property": "hidden",
+  "property_type": "Check",
+  "value": "1",
+  "module": "Shatam Care",
+  "name": "LMS Course-pricing_tab-hidden",
+  "doctype_or_field": "DocField"
+ },
+ {
+  "doctype": "Property Setter",
+  "doc_type": "LMS Course",
+  "field_name": "paid_certificate",
+  "property": "hidden",
+  "property_type": "Check",
+  "value": "1",
+  "module": "Shatam Care",
+  "name": "LMS Course-paid_certificate-hidden",
+  "doctype_or_field": "DocField"
+ },
+ {
+  "doctype": "Property Setter",
+  "doc_type": "LMS Enrollment",
+  "field_name": "payment",
+  "property": "hidden",
+  "property_type": "Check",
+  "value": "1",
+  "module": "Shatam Care",
+  "name": "LMS Enrollment-payment-hidden",
+  "doctype_or_field": "DocField"
+ },
+ {
+  "doctype": "Property Setter",
+  "doc_type": "LMS Enrollment",
+  "field_name": "purchased_certificate",
+  "property": "hidden",
+  "property_type": "Check",
+  "value": "1",
+  "module": "Shatam Care",
+  "name": "LMS Enrollment-purchased_certificate-hidden",
+  "doctype_or_field": "DocField"
+ }
+]

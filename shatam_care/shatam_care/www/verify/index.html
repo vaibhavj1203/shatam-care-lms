@@ -1,0 +1,29 @@
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+<div style="max-width: 480px; margin: 4rem auto; padding: 2rem; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
+	<h2>Certificate Verification</h2>
+
+	{% if not certificate_uid %}
+	<form method="get">
+		<input type="text" name="id" placeholder="Enter Certificate ID (e.g. SCF-2026-000123)" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem;" required>
+		<button type="submit" style="padding: 0.5rem 1.5rem;">Verify</button>
+	</form>
+	{% elif certificate %}
+	<div style="color: #2e7d32;">
+		<p style="font-size: 1.2rem;">&#10003; Valid Certificate</p>
+	</div>
+	<table style="width: 100%; text-align: left; margin-top: 1rem;">
+		<tr><td><strong>Name</strong></td><td>{{ certificate.member_name }}</td></tr>
+		<tr><td><strong>Course</strong></td><td>{{ certificate.course_title }}</td></tr>
+		<tr><td><strong>Issued On</strong></td><td>{{ certificate.issue_date }}</td></tr>
+		<tr><td><strong>Certificate ID</strong></td><td>{{ certificate_uid }}</td></tr>
+	</table>
+	<p style="margin-top: 1rem; font-size: 0.9rem; color: #666;">Issued by Shatam Care Foundation</p>
+	{% else %}
+	<div style="color: #c62828;">
+		<p style="font-size: 1.2rem;">&#10007; No certificate found for ID "{{ certificate_uid }}"</p>
+	</div>
+	{% endif %}
+</div>
+{% endblock %}

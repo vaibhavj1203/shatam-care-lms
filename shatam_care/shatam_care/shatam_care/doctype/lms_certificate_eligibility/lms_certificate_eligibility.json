@@ -1,0 +1,191 @@
+{
+ "actions": [],
+ "creation": "2026-07-30 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "member",
+  "course",
+  "column_break_1",
+  "evaluator",
+  "status",
+  "section_break_1",
+  "all_lessons_completed",
+  "all_checkpoints_passed",
+  "column_break_2",
+  "final_assessment_submission",
+  "auto_gated_on",
+  "section_break_2",
+  "reviewed_by",
+  "reviewed_on",
+  "rejection_reason",
+  "column_break_3",
+  "certificate"
+ ],
+ "fields": [
+  {
+   "fieldname": "member",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Member",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Course",
+   "options": "LMS Course",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "course.evaluator",
+   "fieldname": "evaluator",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Evaluator",
+   "options": "Course Evaluator"
+  },
+  {
+   "default": "Pending Auto-Gate",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending Auto-Gate\nEligible - Pending Approval\nApproved\nRejected",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break",
+   "label": "Auto-Gate Criteria"
+  },
+  {
+   "default": "0",
+   "fieldname": "all_lessons_completed",
+   "fieldtype": "Check",
+   "label": "All Lessons Completed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "all_checkpoints_passed",
+   "fieldtype": "Check",
+   "label": "All In-Video Checkpoints Attempted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "final_assessment_submission",
+   "fieldtype": "Link",
+   "label": "Final Assessment Submission",
+   "options": "LMS Quiz Submission",
+   "read_only": 1
+  },
+  {
+   "fieldname": "auto_gated_on",
+   "fieldtype": "Datetime",
+   "label": "Auto-Gated On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break",
+   "label": "Evaluator Review"
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reviewed_on",
+   "fieldtype": "Datetime",
+   "label": "Reviewed On",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.status=='Rejected'",
+   "fieldname": "rejection_reason",
+   "fieldtype": "Small Text",
+   "label": "Rejection Reason"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "certificate",
+   "fieldtype": "Link",
+   "label": "Certificate",
+   "options": "LMS Certificate",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shatam Care",
+ "name": "LMS Certificate Eligibility",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Moderator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Batch Evaluator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "if_owner": 1,
+   "read": 1,
+   "role": "LMS Student",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "member",
+ "track_changes": 1
+}
