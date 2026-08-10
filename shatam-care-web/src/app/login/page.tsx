@@ -36,30 +36,30 @@ export default function LoginPage() {
 				<h1 className="text-xl font-semibold text-green-800 text-center">
 					Shatam Care Learning
 				</h1>
-				<p className="text-sm text-gray-500 text-center">
+				<p className="text-sm text-gray-600 text-center">
 					Sign in to continue your training
 				</p>
 
 				<div className="space-y-1">
-					<label className="text-sm font-medium text-gray-700">
+					<label className="text-sm font-medium text-gray-900">
 						Phone number or email
 					</label>
 					<input
 						type="text"
 						value={usr}
 						onChange={(e) => setUsr(e.target.value)}
-						className="w-full border rounded px-3 py-2"
+						className="w-full border border-gray-400 rounded px-3 py-2 text-gray-900"
 						required
 					/>
 				</div>
 
 				<div className="space-y-1">
-					<label className="text-sm font-medium text-gray-700">Password</label>
+					<label className="text-sm font-medium text-gray-900">Password</label>
 					<input
 						type="password"
 						value={pwd}
 						onChange={(e) => setPwd(e.target.value)}
-						className="w-full border rounded px-3 py-2"
+						className="w-full border border-gray-400 rounded px-3 py-2 text-gray-900"
 						required
 					/>
 				</div>

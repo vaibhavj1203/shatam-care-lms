@@ -7,6 +7,7 @@ export type Course = {
 	title: string;
 	short_introduction?: string;
 	image?: string;
+	enrolled?: boolean;
 };
 
 export type LessonSummary = {
@@ -45,11 +46,10 @@ export type Checkpoint = {
 	options?: { option_text: string }[];
 };
 
+// Students have no read permission on LMS Course (stock lms grants it only to
+// System Manager / Course Creator / Moderator), so /api/resource 403s for them.
 export function listPublishedCourses(): Promise<Course[]> {
-	return getList<Course>("LMS Course", {
-		filters: [["published", "=", 1]],
-		fields: ["name", "title", "short_introduction", "image"],
-	});
+	return callMethod<Course[]>("shatam_care.shatam_care.content.list_published_courses");
 }
 
 // Students have NO read permission on Course Lesson (stock lms grants it only

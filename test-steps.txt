@@ -1,0 +1,127 @@
+SHATAM CARE LMS - MANUAL TEST STEPS
+Everything is at http://localhost:3000
+Sign out between roles, or use a private window.
+
+LOGINS
+  admin      Administrator                / admin
+  teacher    demo.teacher@example.com     / Teacher-Bamboo-42
+  evaluator  demo.evaluator@example.com   / Evaluator-Bamboo-42
+  student    demo.student@example.com     / Kestrel-Bamboo-42
+
+BEFORE YOU START
+  cd frappe
+  docker compose up -d
+  cd shatam-care-web && npm run dev
+  cd .. && python3 seed-demo.py
+
+
+PART 1 - STUDENT
+1.  Go to localhost:3000. Log in as student.
+    See: only "Courses" and "Certificates" in the top bar. No admin links.
+2.  Click Courses.
+    See: a list of course cards.
+3.  Open "Demo: Safe Patient Handling".
+    See: the real course title as the heading, one chapter with one lesson,
+         a Language dropdown, and a Final Assessment card saying pass mark 50%.
+4.  Open the lesson "Lifting a patient safely".
+    See: the video player loads and plays.
+5.  Wait until 0:05.  <-- MOST IMPORTANT STEP
+    See: video PAUSES and a question appears over it.
+6.  Choose "Your knees", click Submit answer.
+    See: "Correct!"
+7.  Click Continue watching.
+    See: overlay closes, video RESUMES.
+8.  Reload the page and play again from the start.
+    See: the question does NOT appear a second time.
+9.  Let the video play to the end.
+    See: "Lesson marked complete".
+10. Go back to the course. Click Take assessment.
+    See: one question, header says pass mark 50%.
+11. Choose "Your back", click Submit assessment.
+    See: "You passed!" and a note about evaluator approval.
+12. Go back to the course page.
+    See: Certificate section says awaiting evaluator approval.
+13. Change the Language dropdown.
+    See: "Saved" appears.
+
+PART 2 - EVALUATOR
+14. Sign out. Log in as evaluator.
+    See: only "Approvals" in the top bar.
+15. Click Approvals.
+    See: the student listed as pending.
+16. Click "Approve & issue certificate".
+    See: the row disappears.
+
+PART 3 - STUDENT COLLECTS CERTIFICATE
+17. Sign out. Log in as student. Click Certificates.
+    See: a certificate with an ID like SCF-2026-000006.
+18. Click "Verification page".
+    See: "Valid Certificate" with name, course and date.
+19. Copy that URL into a private window (logged out).
+    See: still shows "Valid Certificate".
+20. "Download PDF" is known broken. Skip it.
+
+PART 4 - TEACHER
+21. Sign out. Log in as teacher. Click My Lessons.
+    See: the demo course with its lesson marked Approved.
+22. Click "+ Add lesson". Chapter: Module 1 - Foundations.
+    Title: anything. YouTube: dQw4w9WgXcQ. Create.
+    See: new lesson appears with a Draft badge.
+23. Open your new lesson.
+    See: the video player loads.
+24. Let it play a few seconds, click "Pause here & add quiz checkpoint".
+    See: video pauses, a form appears with that timestamp.
+25. Type a question, fill both options, tick the correct one, Save checkpoint.
+    See: a green marker appears on the bar under the video.
+26. Click the timestamp next to the checkpoint.
+    See: the video jumps to that point.
+27. Click Edit on the checkpoint, change the question, Save changes.
+    See: the new wording in the list.
+28. Click Delete on that checkpoint.
+    See: it disappears (allowed, since no student has answered it).
+29. Click "Submit for review".
+    See: status becomes Submitted for Review.
+
+PART 5 - ADMIN
+30. Sign out. Log in as admin.
+    See: all eight cards on the dashboard.
+31. Click Review.
+    See: the teacher's lesson from step 29. Click Approve. It disappears.
+32. Click Manage Courses.
+    See: courses with lesson and enrolment counts, Published/Draft badges.
+        Courses missing an evaluator or assessment are flagged in amber.
+33. Click "+ New course", give it a title, Create. Then open it.
+34. Under Teachers, search "demo.teacher" and add them.
+    See: they appear in the list.
+35. Under Certificate Evaluator, search "demo.evaluator" and select them.
+    See: "Currently: demo.evaluator@example.com".
+36. Under Final Assessment, set a pass mark, click Create.
+    Then add a question with two options, tick the correct one, Add question.
+    See: the question appears in the list.
+37. Click Publish.
+    See: badge changes to Published.
+38. Click Students, then "+ New student".
+    First try password demo1234 - it should be REJECTED as too weak.
+    Then register someone properly and enrol them in your new course.
+    See: a temporary password shown once. Write it down.
+39. Click Groups. Create a group, e.g. "Nashik - Coordinator Priya".
+    See: it appears in the list.
+40. Sign out. Log in as the student you made in step 38.
+    Open your new course and click Enrol.
+    See: enrolment works and the lessons become clickable.
+
+
+IF SOMETHING FAILS
+  Note the step number and what you saw instead.
+  Press F12, check the Console tab for red errors.
+  Press F12, check the Network tab for failed (red) requests.
+  Backend logs: docker compose logs --tail 100 frappe
+
+KNOWN GAPS - NOT BUGS
+  There is no signup page. Students must be created by an admin (step 38).
+  Download PDF does not work (step 20).
+  Branding is placeholder - green colours, no logo, stock certificate design.
+
+WHEN DONE
+  docker compose stop
+  Do not use "docker compose down" - it deletes the setup inside the container.

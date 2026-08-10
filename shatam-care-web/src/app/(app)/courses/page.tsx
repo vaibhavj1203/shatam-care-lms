@@ -29,9 +29,16 @@ export default function CoursesPage() {
 						href={`/courses/${course.name}`}
 						className="block rounded-lg border border-green-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
 					>
-						<h2 className="font-semibold text-green-800">{course.title}</h2>
+						<div className="flex items-start justify-between gap-2">
+							<h2 className="font-semibold text-green-800">{course.title}</h2>
+							{course.enrolled && (
+								<span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 shrink-0">
+									Enrolled
+								</span>
+							)}
+						</div>
 						{course.short_introduction && (
-							<p className="text-sm text-gray-500 mt-1">{course.short_introduction}</p>
+							<p className="text-sm text-gray-600 mt-1">{course.short_introduction}</p>
 						)}
 					</Link>
 				))}

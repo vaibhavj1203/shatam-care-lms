@@ -109,6 +109,38 @@ def create_lesson(course, chapter, title, youtube=None, body=None):
 
 
 @frappe.whitelist()
+def list_published_courses():
+	"""The course catalogue, for any signed-in user.
+
+	`LMS Course` grants read only to System Manager / Course Creator /
+	Moderator, so learners get a PermissionError from `/api/resource/LMS Course`
+	— the same trap as `Course Lesson`. Read with elevated permissions after
+	restricting to published courses, which are public by definition.
+
+	Also flags which ones the caller is already enrolled in, so the catalogue
+	can distinguish "continue" from "enrol".
+	"""
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Please sign in to view courses."), frappe.PermissionError)
+
+	courses = frappe.get_all(
+		"LMS Course",
+		filters={"published": 1},
+		fields=["name", "title", "short_introduction", "image"],
+		order_by="creation desc",
+		ignore_permissions=True,
+	)
+	enrolled = set(
+		frappe.get_all(
+			"LMS Enrollment", filters={"member": frappe.session.user}, pluck="course"
+		)
+	)
+	for course in courses:
+		course["enrolled"] = course["name"] in enrolled
+	return courses
+
+
+@frappe.whitelist()
 def get_course_content(course):
 	"""Chapters + lessons for a course, flat, for an enrolled learner.
 
