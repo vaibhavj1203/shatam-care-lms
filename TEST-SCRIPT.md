@@ -111,8 +111,7 @@ The most valuable part of this script. Course: **Demo: Safe Patient Handling**.
 - [ ] **C3.** Copy that URL into a **private window** (logged out).
       → Still shows *Valid Certificate*. Public verification needs no account.
 
-- [ ] **C4.** ❌ **Download PDF is known-broken** — wkhtmltopdf isn't installed.
-      Expected to fail; not a new bug.
+- [ ] **C4.** Click **Download PDF** → a certificate PDF downloads and opens.
 
 ---
 
@@ -189,7 +188,6 @@ Backend logs: `docker compose logs --tail 100 frappe`
 
 - **No signup page.** Students must be registered by an admin (E6). Deliberate
   gap, still to build.
-- **Download PDF fails** (C4).
 - **Branding is placeholder** — green palette, no logo, stock certificate design.
 - **Assessment-question translations** have no authoring UI; checkpoint
   translations do (D5).

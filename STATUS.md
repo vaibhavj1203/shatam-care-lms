@@ -135,8 +135,6 @@ Ranked by what blocks a real pilot:
    still outstanding — see BRANDING.md for the swap-in points.
 4. **Not deployed.** India-region VPS decided, never provisioned. Runs only on
    this machine.
-5. **Certificate PDF download** fails (wkhtmltopdf absent). Everything else
-   about certificates works.
 6. Smaller: no authoring UI for assessment-question translations (checkpoint
    translations have one); courses can't be renamed after creation; lessons
    can't be reordered or deleted; students can't change group after
@@ -154,10 +152,10 @@ Ranked by what blocks a real pilot:
 2. **Not yet exercised in the browser**: the in-video checkpoint overlay and the
    teacher's video-scrubber both need a real YouTube video and manual playback;
    the smoke test covers their APIs but not the player UI.
-3. **wkhtmltopdf** isn't installed — the "Download PDF" link on `/certificates` will
-   fail until it is. Upstream archived the project and the Homebrew formula is gone,
-   so this is genuinely awkward on Apple Silicon. Everything else about certificates
-   (issuance, UID, QR, verification page) works without it.
+3. ~~wkhtmltopdf missing~~ **Not an issue.** The `frappe/bench` image ships
+   wkhtmltopdf 0.12.6.1 (patched Qt) and certificate PDF download works. Earlier
+   docs claimed otherwise — that caveat came from the *native macOS* attempt,
+   where the Homebrew formula is gone, and was wrongly carried over to Docker.
 4. **Assessment question translations have no authoring UI.** The backend applies
    `LMS Question Translation` when it exists, and checkpoint translations *do* have a
    UI, but assessment questions must currently be translated via Frappe desk.

@@ -19,10 +19,16 @@ import urllib.request
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000").rstrip("/")
 
 # Frappe enforces password strength — short or common passwords are rejected.
+# Roles are explicit per account. Staff must NOT get "LMS Student" — that
+# would give a teacher or evaluator the learner navigation (course catalogue,
+# enrolment, certificates), which is confusing and wrong.
 ACCOUNTS = [
-    ("teacher", "demo.teacher@example.com", "Teacher-Bamboo-42", "Demo Teacher"),
-    ("evaluator", "demo.evaluator@example.com", "Evaluator-Bamboo-42", "Demo Evaluator"),
-    ("student", "demo.student@example.com", "Kestrel-Bamboo-42", "Demo Student"),
+    ("teacher", "demo.teacher@example.com", "Teacher-Bamboo-42", "Demo Teacher",
+     ["Course Creator"]),
+    ("evaluator", "demo.evaluator@example.com", "Evaluator-Bamboo-42", "Demo Evaluator",
+     ["Batch Evaluator"]),
+    ("student", "demo.student@example.com", "Kestrel-Bamboo-42", "Demo Student",
+     ["LMS Student"]),
 ]
 COURSE_TITLE = "Demo: Safe Patient Handling"
 
@@ -55,12 +61,14 @@ admin = call("shatam_care.shatam_care.auth.login_and_get_token",
 
 # --- accounts -----------------------------------------------------------------
 users = {}
-for role, email, password, full_name in ACCOUNTS:
-    created = call("shatam_care.shatam_care.admin_api.create_student", admin,
-                   {"email": email, "full_name": full_name, "password": password})
+for role, email, password, full_name, roles in ACCOUNTS:
+    created = call("shatam_care.shatam_care.admin_api.create_user", admin,
+                   {"email": email, "full_name": full_name,
+                    "roles": json.dumps(roles), "password": password})
     users[role] = created["user"]
     if created.get("existed"):
         # Re-run: we can't recover the old password, so set the documented one.
+        # Roles are re-applied by create_user, which also strips any stale ones.
         call("shatam_care.shatam_care.admin_api.reset_password", admin,
              {"user": email, "password": password})
 
@@ -115,6 +123,6 @@ print(f"  course : {COURSE_TITLE}")
 print(f"  lesson : {lesson}  (checkpoint at 0:05)")
 print("\n  logins:")
 print(f"    {'admin':<10} {'Administrator':<30} / admin")
-for role, email, password, _ in ACCOUNTS:
-    print(f"    {role:<10} {email:<30} / {password}")
+for role, email, password, _, roles in ACCOUNTS:
+    print(f"    {role:<10} {email:<30} / {password:<22} {roles}")
 print()

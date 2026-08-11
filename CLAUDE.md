@@ -151,5 +151,4 @@ Python changes are picked up on reload in developer mode.
 written against the real stock schema and py-compiles, but expect genuine errors on
 first migrate — doctype JSON, fixture ordering, permission edge cases. `STATUS.md`
 tracks what's implemented, what's verified, and known gaps (no assessment-question
-translation UI, wkhtmltopdf absent so certificate PDF download fails, placeholder
-branding).
+translation UI, placeholder branding).

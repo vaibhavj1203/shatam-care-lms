@@ -46,7 +46,9 @@ PART 1 - STUDENT
 
 PART 2 - EVALUATOR
 14. Sign out. Log in as evaluator.
-    See: only "Approvals" in the top bar.
+    See: ONLY "Approvals" in the top bar. No Courses, no Certificates.
+         (Staff are not learners. If you see learner tabs, the account
+          wrongly has the LMS Student role.)
 15. Click Approvals.
     See: the student listed as pending.
 16. Click "Approve & issue certificate".
@@ -59,10 +61,13 @@ PART 3 - STUDENT COLLECTS CERTIFICATE
     See: "Valid Certificate" with name, course and date.
 19. Copy that URL into a private window (logged out).
     See: still shows "Valid Certificate".
-20. "Download PDF" is known broken. Skip it.
+20. Click "Download PDF".
+    See: a certificate PDF downloads and opens.
 
 PART 4 - TEACHER
 21. Sign out. Log in as teacher. Click My Lessons.
+    See: ONLY "My Lessons" in the top bar. No Courses, no Certificates,
+         and no way to enrol in anything.
     See: the demo course with its lesson marked Approved.
 22. Click "+ Add lesson". Chapter: Module 1 - Foundations.
     Title: anything. YouTube: dQw4w9WgXcQ. Create.
@@ -119,8 +124,15 @@ IF SOMETHING FAILS
 
 KNOWN GAPS - NOT BUGS
   There is no signup page. Students must be created by an admin (step 38).
-  Download PDF does not work (step 20).
   Branding is placeholder - green colours, no logo, stock certificate design.
+
+ROLES - WHAT EACH ACCOUNT SHOULD SEE
+  student    Courses, Certificates
+  teacher    My Lessons
+  evaluator  Approvals
+  admin      everything
+  A teacher or evaluator seeing learner tabs means their account has the
+  LMS Student role by mistake. Re-run: python3 seed-demo.py
 
 WHEN DONE
   docker compose stop

@@ -187,9 +187,9 @@ is accepted.
 3. Open the public verification page — no login required:
    `http://localhost:8000/verify?id=SCF-2026-000001` (use the real ID shown).
 
-> **Known-broken:** the *Download PDF* link on the certificates page fails —
-> wkhtmltopdf isn't installed in the image. Issuance, ID, QR and the verification
-> page all work.
+> **Download PDF works** — the `frappe/bench` image ships wkhtmltopdf. (Earlier
+> versions of these docs claimed it was broken; that applied to a native macOS
+> install, not Docker.)
 
 ### 4e. Frappe desk (admin backend) — `http://localhost:8000/app`
 
@@ -241,7 +241,6 @@ These are genuinely not built yet — see STATUS.md:
 
 - **Self-service signup.** `/login` is the only public page; learners must be
   registered by an admin.
-- **Certificate PDF download** (wkhtmltopdf missing).
 - **Real branding** — placeholder green, no logo, stock certificate template.
 - **Assessment-question translations** — backend applies them, but there's no
   authoring UI (checkpoint translations do have one).

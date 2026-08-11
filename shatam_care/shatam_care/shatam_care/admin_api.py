@@ -303,6 +303,65 @@ def create_student(email, full_name, mobile_no=None, password=None):
 	return {"user": user.name, "password": generated, "existed": False}
 
 
+VALID_ROLES = ("LMS Student", "Course Creator", "Batch Evaluator", "Moderator")
+
+
+@frappe.whitelist()
+def create_user(email, full_name, roles, mobile_no=None, password=None):
+	"""Create a staff account with an explicit set of roles.
+
+	Distinct from `create_student`, which always grants `LMS Student`. Using
+	that to create teachers and evaluators gives them the learner navigation —
+	course catalogue, enrolment, certificates — which is confusing and wrong:
+	being able to teach a course is not the same as being enrolled on one. If
+	a staff member should also take courses, grant `LMS Student` explicitly.
+	"""
+	check_admin()
+	roles = frappe.parse_json(roles) if isinstance(roles, str) else roles
+	unknown = [r for r in roles if r not in VALID_ROLES]
+	if unknown:
+		frappe.throw(_("Unknown role(s): {0}").format(", ".join(unknown)))
+
+	generated = password or random_string(10)
+	if frappe.db.exists("User", email):
+		user_doc = frappe.get_doc("User", email)
+		existed = True
+	else:
+		parts = full_name.strip().split(" ", 1)
+		user_doc = frappe.new_doc("User")
+		user_doc.email = email
+		user_doc.first_name = parts[0]
+		if len(parts) > 1:
+			user_doc.last_name = parts[1]
+		user_doc.send_welcome_email = 0
+		user_doc.new_password = generated
+		existed = False
+	if mobile_no:
+		user_doc.mobile_no = mobile_no
+	user_doc.save(ignore_permissions=True) if existed else user_doc.insert(ignore_permissions=True)
+
+	set_user_roles(email, roles)
+	return {"user": email, "password": None if existed else generated, "existed": existed}
+
+
+@frappe.whitelist()
+def set_user_roles(user, roles):
+	"""Replace the app-managed roles on a user, leaving unrelated roles alone."""
+	check_admin()
+	roles = set(frappe.parse_json(roles) if isinstance(roles, str) else roles)
+	unknown = [r for r in roles if r not in VALID_ROLES]
+	if unknown:
+		frappe.throw(_("Unknown role(s): {0}").format(", ".join(unknown)))
+
+	user_doc = frappe.get_doc("User", user)
+	# Only touch the roles this app owns; anything else on the account stays.
+	user_doc.roles = [r for r in user_doc.roles if r.role not in VALID_ROLES]
+	for role in roles:
+		user_doc.append("roles", {"role": role})
+	user_doc.save(ignore_permissions=True)
+	return sorted(roles)
+
+
 @frappe.whitelist()
 def reset_password(user, password=None):
 	"""Set a learner's password on their behalf.
