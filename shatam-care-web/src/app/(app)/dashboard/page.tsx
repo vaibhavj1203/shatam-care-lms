@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ROLES } from "@/lib/roles";
 
 export default function DashboardPage() {
-	const { user, hasRole } = useAuth();
+	const { user, hasRole, can } = useAuth();
 	if (!user) return null;
 
 	return (
@@ -27,42 +27,46 @@ export default function DashboardPage() {
 						/>
 					</>
 				)}
-				{hasRole(ROLES.TEACHER) && (
+				{can("content") && (
 					<DashboardCard
 						href="/teach"
-						title="My Lessons"
-						description="Upload chapters, lessons, and in-video quiz checkpoints."
+						title="Course Content"
+						description="Add chapters, lessons and in-video quiz checkpoints."
 					/>
 				)}
-				{hasRole(ROLES.ADMIN) && (
+				{can("courses") && (
+					<DashboardCard
+						href="/admin/courses"
+						title="Manage Courses"
+						description="Create courses, set up final assessments, and publish."
+					/>
+				)}
+				{can("people") && (
 					<>
 						<DashboardCard
-							href="/admin/courses"
-							title="Manage Courses"
-							description="Create courses, assign teachers and evaluators, build assessments."
-						/>
-						<DashboardCard
 							href="/admin/students"
-							title="Students"
-							description="Register learners, enroll them, and track progress."
+							title="People"
+							description="Create accounts, set what they can do, enrol learners."
 						/>
 						<DashboardCard
 							href="/admin/groups"
 							title="Student Groups"
 							description="Organise learners by region or field coordinator."
 						/>
-						<DashboardCard
-							href="/admin/reviews"
-							title="Content Review"
-							description="Approve or reject lessons submitted by teachers."
-						/>
 					</>
 				)}
-				{hasRole(ROLES.EVALUATOR) && (
+				{can("review") && (
+					<DashboardCard
+						href="/admin/reviews"
+						title="Content Review"
+						description="Approve or reject lessons submitted for review."
+					/>
+				)}
+				{can("certificates") && (
 					<DashboardCard
 						href="/evaluate"
 						title="Certificate Approvals"
-						description="Review students who are eligible for certification."
+						description="Review eligible learners and issue their certificates."
 					/>
 				)}
 			</div>

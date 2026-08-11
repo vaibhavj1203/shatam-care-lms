@@ -13,11 +13,19 @@ import frappe
 from frappe import _
 from frappe.utils import random_string
 
+from shatam_care.shatam_care.capabilities import (
+	check_capability,
+	get_capabilities,
+	is_admin,
+	set_capabilities,
+)
+
 ADMIN_ROLES = ("System Manager", "Moderator")
 
 
 def check_admin():
-	if not any(role in frappe.get_roles() for role in ADMIN_ROLES):
+	"""Full-admin gate, for actions that are not delegable to an evaluator."""
+	if not is_admin():
 		frappe.throw(_("Not permitted."), frappe.PermissionError)
 
 
@@ -26,7 +34,7 @@ def check_admin():
 
 @frappe.whitelist()
 def list_all_courses():
-	check_admin()
+	check_capability("courses")
 	courses = frappe.get_all(
 		"LMS Course",
 		fields=["name", "title", "short_introduction", "published", "evaluator"],
@@ -45,20 +53,23 @@ def list_all_courses():
 def create_course(title, short_introduction=None, description=None):
 	"""Create a course. `instructors` is mandatory on LMS Course, so seed it with
 	the creating admin — they can add real teachers and remove themselves after."""
-	check_admin()
+	check_capability("courses")
 	course = frappe.new_doc("LMS Course")
 	course.title = title
-	course.short_introduction = short_introduction
+	# Both short_introduction and description are mandatory on LMS Course, but
+	# the create form asks only for a title — fall back to it so a minimal
+	# course can be created and the text filled in later.
+	course.short_introduction = short_introduction or title
 	course.description = description or short_introduction or title
 	course.published = 0
 	course.append("instructors", {"instructor": frappe.session.user})
-	course.insert()
+	course.insert(ignore_permissions=True)
 	return course.name
 
 
 @frappe.whitelist()
 def update_course(course, title=None, short_introduction=None, description=None, published=None):
-	check_admin()
+	check_capability("courses")
 	doc = frappe.get_doc("LMS Course", course)
 	if title is not None:
 		doc.title = title
@@ -68,13 +79,13 @@ def update_course(course, title=None, short_introduction=None, description=None,
 		doc.description = description
 	if published is not None:
 		doc.published = 1 if str(published) in ("1", "true", "True") else 0
-	doc.save()
+	doc.save(ignore_permissions=True)
 	return doc.name
 
 
 @frappe.whitelist()
 def get_course_admin_detail(course):
-	check_admin()
+	check_capability("courses")
 	doc = frappe.get_doc("LMS Course", course)
 	instructors = [row.instructor for row in doc.instructors]
 	instructor_details = (
@@ -105,22 +116,22 @@ def get_course_admin_detail(course):
 
 @frappe.whitelist()
 def add_instructor(course, user):
-	check_admin()
+	check_capability("courses")
 	doc = frappe.get_doc("LMS Course", course)
 	if any(row.instructor == user for row in doc.instructors):
 		return doc.name
 	doc.append("instructors", {"instructor": user})
-	doc.save()
+	doc.save(ignore_permissions=True)
 	_ensure_role(user, "Course Creator")
 	return doc.name
 
 
 @frappe.whitelist()
 def remove_instructor(course, user):
-	check_admin()
+	check_capability("courses")
 	doc = frappe.get_doc("LMS Course", course)
 	doc.instructors = [row for row in doc.instructors if row.instructor != user]
-	doc.save()
+	doc.save(ignore_permissions=True)
 	return doc.name
 
 
@@ -131,12 +142,12 @@ def set_course_evaluator(course, user):
 	`LMS Course.evaluator` links to Course Evaluator (not User), so create that
 	record on demand — admins shouldn't have to know about the indirection.
 	"""
-	check_admin()
+	check_capability("courses")
 	evaluator = frappe.db.get_value("Course Evaluator", {"evaluator": user}, "name")
 	if not evaluator:
 		evaluator_doc = frappe.new_doc("Course Evaluator")
 		evaluator_doc.evaluator = user
-		evaluator_doc.insert()
+		evaluator_doc.insert(ignore_permissions=True)
 		evaluator = evaluator_doc.name
 	frappe.db.set_value("LMS Course", course, "evaluator", evaluator)
 	_ensure_role(user, "Batch Evaluator")
@@ -154,7 +165,7 @@ def create_final_assessment(course, title, passing_percentage=70):
 	`course` field from `quiz.course`, and the eligibility auto-gate reads that
 	— a quiz without it would silently never certify anyone.
 	"""
-	check_admin()
+	check_capability("courses")
 	existing = frappe.db.exists("LMS Quiz", {"course": course, "is_final_assessment": 1})
 	if existing:
 		frappe.throw(_("This course already has a final assessment."))
@@ -165,7 +176,7 @@ def create_final_assessment(course, title, passing_percentage=70):
 	quiz.is_final_assessment = 1
 	quiz.passing_percentage = passing_percentage
 	quiz.show_answers = 0
-	quiz.insert()
+	quiz.insert(ignore_permissions=True)
 
 	# LMSQuiz.calculate_total_marks() forces passing_percentage to 100 whenever
 	# the quiz has no questions — which is always true at creation, so the
@@ -179,11 +190,11 @@ def create_final_assessment(course, title, passing_percentage=70):
 @frappe.whitelist()
 def update_assessment(quiz, passing_percentage=None, title=None):
 	"""Edit the final assessment after creation (notably the pass mark)."""
-	check_admin()
+	check_capability("courses")
 	doc = frappe.get_doc("LMS Quiz", quiz)
 	if title is not None:
 		doc.title = title
-	doc.save()
+	doc.save(ignore_permissions=True)
 	if passing_percentage is not None:
 		# Same reason as above: bypass validate so an empty quiz keeps the value.
 		doc.db_set("passing_percentage", int(passing_percentage), update_modified=False)
@@ -198,7 +209,7 @@ def add_assessment_question(
 
 	LMS Question stores choices as flat option_1..4 / is_correct_1..4 fields.
 	"""
-	check_admin()
+	check_capability("courses")
 	options = frappe.parse_json(options)
 	correct_indexes = {int(i) for i in frappe.parse_json(correct_indexes)}
 	explanations = frappe.parse_json(explanations) if explanations else []
@@ -219,17 +230,17 @@ def add_assessment_question(
 		question.set(f"is_correct_{i + 1}", 1 if i in correct_indexes else 0)
 		if i < len(explanations) and explanations[i]:
 			question.set(f"explanation_{i + 1}", explanations[i])
-	question.insert()
+	question.insert(ignore_permissions=True)
 
 	quiz_doc = frappe.get_doc("LMS Quiz", quiz)
 	quiz_doc.append("questions", {"question": question.name, "marks": marks, "type": "Choices"})
-	quiz_doc.save()
+	quiz_doc.save(ignore_permissions=True)
 	return question.name
 
 
 @frappe.whitelist()
 def get_assessment_questions(quiz):
-	check_admin()
+	check_capability("courses")
 	quiz_doc = frappe.get_doc("LMS Quiz", quiz)
 	names = [row.question for row in quiz_doc.questions]
 	if not names:
@@ -243,10 +254,10 @@ def get_assessment_questions(quiz):
 
 @frappe.whitelist()
 def remove_assessment_question(quiz, question):
-	check_admin()
+	check_capability("courses")
 	quiz_doc = frappe.get_doc("LMS Quiz", quiz)
 	quiz_doc.questions = [row for row in quiz_doc.questions if row.question != question]
-	quiz_doc.save()
+	quiz_doc.save(ignore_permissions=True)
 	return quiz
 
 
@@ -255,7 +266,7 @@ def remove_assessment_question(quiz, question):
 
 @frappe.whitelist()
 def list_students(course=None, student_group=None):
-	check_admin()
+	check_capability("people")
 	filters = {}
 	if course:
 		filters["course"] = course
@@ -281,7 +292,7 @@ def list_students(course=None, student_group=None):
 def create_student(email, full_name, mobile_no=None, password=None):
 	"""Assisted signup (PLAN.md 3.7): an admin registers a learner who can't
 	self-serve. Returns a generated password to hand over if none was given."""
-	check_admin()
+	check_capability("people")
 	if frappe.db.exists("User", email):
 		user = frappe.get_doc("User", email)
 		_ensure_role(email, "LMS Student")
@@ -307,7 +318,48 @@ VALID_ROLES = ("LMS Student", "Course Creator", "Batch Evaluator", "Moderator")
 
 
 @frappe.whitelist()
-def create_user(email, full_name, roles, mobile_no=None, password=None):
+def update_person(user, roles=None, capabilities=None):
+	"""Change someone's role and/or delegated capabilities after creation."""
+	check_capability("people")
+	result = {"user": user}
+	if roles is not None:
+		result["roles"] = set_user_roles(user, roles)
+	if capabilities is not None:
+		result["capabilities"] = set_capabilities(user, capabilities)
+	return result
+
+
+@frappe.whitelist()
+def list_people(search=None):
+	"""Everyone with an app role, plus their delegated capabilities."""
+	check_capability("people")
+	rows = frappe.get_all(
+		"Has Role",
+		filters={"role": ["in", list(VALID_ROLES)], "parenttype": "User"},
+		fields=["parent as user", "role"],
+	)
+	people = {}
+	for row in rows:
+		people.setdefault(row.user, {"user": row.user, "roles": []})
+		people[row.user]["roles"].append(row.role)
+
+	for user, entry in people.items():
+		detail = frappe.db.get_value(
+			"User", user, ["full_name", "enabled", "shatam_capabilities"], as_dict=True
+		)
+		entry["full_name"] = detail.full_name if detail else user
+		entry["enabled"] = bool(detail.enabled) if detail else False
+		entry["capabilities"] = get_capabilities(user)
+
+	result = sorted(people.values(), key=lambda p: (p["full_name"] or "").lower())
+	if search:
+		needle = search.lower()
+		result = [p for p in result if needle in (p["full_name"] or "").lower() or needle in p["user"].lower()]
+	return result
+
+
+@frappe.whitelist()
+def create_user(email, full_name, roles, mobile_no=None, password=None, capabilities=None):
 	"""Create a staff account with an explicit set of roles.
 
 	Distinct from `create_student`, which always grants `LMS Student`. Using
@@ -316,7 +368,7 @@ def create_user(email, full_name, roles, mobile_no=None, password=None):
 	being able to teach a course is not the same as being enrolled on one. If
 	a staff member should also take courses, grant `LMS Student` explicitly.
 	"""
-	check_admin()
+	check_capability("people")
 	roles = frappe.parse_json(roles) if isinstance(roles, str) else roles
 	unknown = [r for r in roles if r not in VALID_ROLES]
 	if unknown:
@@ -341,13 +393,16 @@ def create_user(email, full_name, roles, mobile_no=None, password=None):
 	user_doc.save(ignore_permissions=True) if existed else user_doc.insert(ignore_permissions=True)
 
 	set_user_roles(email, roles)
+	# Evaluators carry an explicit capability set; admins hold everything
+	# implicitly and students hold none, so this is a no-op for them.
+	set_capabilities(email, capabilities or [])
 	return {"user": email, "password": None if existed else generated, "existed": existed}
 
 
 @frappe.whitelist()
 def set_user_roles(user, roles):
 	"""Replace the app-managed roles on a user, leaving unrelated roles alone."""
-	check_admin()
+	check_capability("people")
 	roles = set(frappe.parse_json(roles) if isinstance(roles, str) else roles)
 	unknown = [r for r in roles if r not in VALID_ROLES]
 	if unknown:
@@ -370,7 +425,7 @@ def reset_password(user, password=None):
 	email for a reset link, so an admin/coordinator needs to be able to hand
 	them a new one directly. Returns the password so it can be shown once.
 	"""
-	check_admin()
+	check_capability("people")
 	if user in ("Administrator",):
 		frappe.throw(_("Refusing to reset the Administrator password from the API."))
 
@@ -383,7 +438,7 @@ def reset_password(user, password=None):
 
 @frappe.whitelist()
 def enroll_student(course, member, student_group=None, preferred_language=None):
-	check_admin()
+	check_capability("people")
 	existing = frappe.db.get_value("LMS Enrollment", {"course": course, "member": member}, "name")
 	if existing:
 		enrollment = frappe.get_doc("LMS Enrollment", existing)
@@ -401,8 +456,38 @@ def enroll_student(course, member, student_group=None, preferred_language=None):
 
 
 @frappe.whitelist()
+def list_student_groups():
+	"""Student groups for the People screen.
+
+	Served through the capability gate rather than /api/resource: the doctype
+	grants read to System Manager / Moderator only, so a delegated coordinator
+	holding "people" would otherwise be blocked by doctype permissions they
+	don't hold.
+	"""
+	check_capability("people")
+	return frappe.get_all(
+		"LMS Student Group",
+		fields=["name", "title", "region", "coordinator", "description"],
+		order_by="title asc",
+		ignore_permissions=True,
+	)
+
+
+@frappe.whitelist()
+def create_student_group(title, region=None, coordinator=None, description=None):
+	check_capability("people")
+	group = frappe.new_doc("LMS Student Group")
+	group.title = title
+	group.region = region
+	group.coordinator = coordinator
+	group.description = description
+	group.insert(ignore_permissions=True)
+	return {"name": group.name, "title": group.title, "region": group.region}
+
+
+@frappe.whitelist()
 def search_users(query, limit=20):
-	check_admin()
+	check_capability("people")
 	return frappe.get_all(
 		"User",
 		filters=[

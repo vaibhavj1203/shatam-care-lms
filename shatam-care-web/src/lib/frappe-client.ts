@@ -4,12 +4,17 @@
 
 export const FRAPPE_URL = process.env.NEXT_PUBLIC_FRAPPE_URL ?? "http://lms.localhost:8000";
 
+export type Capability = "courses" | "content" | "review" | "certificates" | "people";
+
 export type AuthToken = {
 	apiKey: string;
 	apiSecret: string;
 	user: string;
 	fullName: string;
 	roles: string[];
+	/** What this user may do. Admins hold every capability implicitly. */
+	capabilities: Capability[];
+	isAdmin: boolean;
 };
 
 const TOKEN_STORAGE_KEY = "shatam_care_auth";
@@ -69,6 +74,8 @@ export async function login(usr: string, pwd: string): Promise<AuthToken> {
 		user: string;
 		full_name: string;
 		roles: string[];
+		capabilities: Capability[];
+		is_admin: boolean;
 	}>("/api/method/shatam_care.shatam_care.auth.login_and_get_token", {
 		method: "POST",
 		body: JSON.stringify({ usr, pwd }),
@@ -79,6 +86,8 @@ export async function login(usr: string, pwd: string): Promise<AuthToken> {
 		user: result.user,
 		fullName: result.full_name,
 		roles: result.roles,
+		capabilities: result.capabilities ?? [],
+		isAdmin: !!result.is_admin,
 	};
 	saveToken(token);
 	return token;

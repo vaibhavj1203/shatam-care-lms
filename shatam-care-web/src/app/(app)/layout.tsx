@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ROLES } from "@/lib/roles";
 
 export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-	const { user, ready, logout, hasRole } = useAuth();
+	const { user, ready, logout, hasRole, can } = useAuth();
 	const router = useRouter();
 
 	useEffect(() => {
@@ -22,6 +22,10 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
 				<Link href="/dashboard" className="font-semibold">
 					Shatam Care Learning
 				</Link>
+				{/* Navigation follows capabilities, not roles. An evaluator holds
+				    whatever subset the admin delegated, so each link is gated on
+				    the specific right it needs. Learner links stay role-based —
+				    being a learner is not a delegated capability. */}
 				<nav className="flex items-center gap-4 text-sm flex-wrap justify-end">
 					{hasRole(ROLES.STUDENT) && (
 						<>
@@ -29,16 +33,16 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
 							<Link href="/certificates">Certificates</Link>
 						</>
 					)}
-					{hasRole(ROLES.TEACHER) && <Link href="/teach">My Lessons</Link>}
-					{hasRole(ROLES.ADMIN) && (
+					{can("content") && <Link href="/teach">Content</Link>}
+					{can("courses") && <Link href="/admin/courses">Courses</Link>}
+					{can("people") && (
 						<>
-							<Link href="/admin/courses">Manage Courses</Link>
-							<Link href="/admin/students">Students</Link>
+							<Link href="/admin/students">People</Link>
 							<Link href="/admin/groups">Groups</Link>
-							<Link href="/admin/reviews">Review</Link>
 						</>
 					)}
-					{hasRole(ROLES.EVALUATOR) && <Link href="/evaluate">Approvals</Link>}
+					{can("review") && <Link href="/admin/reviews">Review</Link>}
+					{can("certificates") && <Link href="/evaluate">Approvals</Link>}
 					<span className="opacity-80">{user.fullName}</span>
 					<button onClick={logout} className="underline">
 						Sign out

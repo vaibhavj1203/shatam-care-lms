@@ -8,6 +8,7 @@ surface.
 import frappe
 from frappe import _
 
+from shatam_care.shatam_care.capabilities import check_capability, has_capability, is_admin
 from shatam_care.shatam_care.translations import (
 	apply_checkpoint_translation,
 	get_preferred_language,
@@ -96,15 +97,28 @@ def get_certificate_eligibility(course):
 
 @frappe.whitelist()
 def evaluator_queue():
-	"""Certificate approvals pending for courses the current user evaluates."""
-	evaluator_names = frappe.get_all(
-		"Course Evaluator", filters={"evaluator": frappe.session.user}, pluck="name"
-	)
-	if not evaluator_names:
-		return []
+	"""Certificates awaiting approval.
+
+	Anyone holding the "certificates" capability sees every pending record —
+	courses no longer need a named Course Evaluator for approvals to happen,
+	which previously meant a course without one could strand its learners.
+	Users without the capability fall back to the courses they are explicitly
+	assigned to evaluate.
+	"""
+	check_capability("certificates")
+
+	filters = {"status": "Eligible - Pending Approval"}
+	if not (is_admin() or has_capability("certificates")):
+		evaluator_names = frappe.get_all(
+			"Course Evaluator", filters={"evaluator": frappe.session.user}, pluck="name"
+		)
+		if not evaluator_names:
+			return []
+		filters["evaluator"] = ["in", evaluator_names]
+
 	return frappe.get_all(
 		"LMS Certificate Eligibility",
-		filters={"evaluator": ["in", evaluator_names], "status": "Eligible - Pending Approval"},
+		filters=filters,
 		fields=["name", "member", "course", "auto_gated_on"],
 		order_by="auto_gated_on asc",
 	)
@@ -114,26 +128,29 @@ def evaluator_queue():
 def submit_lesson_for_review(lesson):
 	doc = frappe.get_doc("Course Lesson", lesson)
 	course = frappe.get_doc("LMS Course", doc.course)
-	if not any(row.instructor == frappe.session.user for row in course.instructors):
+	authored_by_me = any(row.instructor == frappe.session.user for row in course.instructors)
+	if not (is_admin() or has_capability("content") or authored_by_me):
 		frappe.throw(_("You can only submit your own lessons for review."), frappe.PermissionError)
 	doc.review_status = "Submitted for Review"
-	doc.save()
+	doc.save(ignore_permissions=True)
 	return doc.review_status
 
 
 @frappe.whitelist()
 def review_lesson(lesson, decision, notes=None):
+	check_capability("review")
 	if decision not in ("Approved", "Rejected"):
 		frappe.throw(_("Decision must be Approved or Rejected."))
 	doc = frappe.get_doc("Course Lesson", lesson)
 	doc.review_status = decision
 	doc.review_notes = notes
-	doc.save()
+	doc.save(ignore_permissions=True)
 	return doc.review_status
 
 
 @frappe.whitelist()
 def pending_lesson_reviews():
+	check_capability("review")
 	return frappe.get_all(
 		"Course Lesson",
 		filters={"review_status": "Submitted for Review"},
@@ -146,9 +163,11 @@ def pending_lesson_reviews():
 
 
 def _check_lesson_instructor(lesson):
+	"""Allow admins, anyone delegated the "content" capability, or the course's
+	own instructors. Capability first, since an evaluator trusted with content
+	is not necessarily listed as an instructor on every course they maintain."""
 	course = frappe.db.get_value("Course Lesson", lesson, "course")
-	roles = frappe.get_roles()
-	if any(role in roles for role in ("System Manager", "Moderator")):
+	if is_admin() or has_capability("content"):
 		return course
 	instructors = frappe.get_all("Course Instructor", filters={"parent": course}, pluck="instructor")
 	if frappe.session.user not in instructors:
@@ -208,7 +227,7 @@ def update_checkpoint(checkpoint, question_text=None, label=None, timestamp_seco
 				"options",
 				{"option_text": option.get("option_text"), "is_correct": option.get("is_correct") and 1 or 0},
 			)
-	doc.save()
+	doc.save(ignore_permissions=True)
 	return doc.name
 
 
@@ -221,7 +240,7 @@ def delete_checkpoint(checkpoint):
 			_("Learners have already answered this checkpoint, so it can no longer be deleted. Edit it instead.")
 		)
 	frappe.db.delete("LMS Video Checkpoint Translation", {"checkpoint": checkpoint})
-	frappe.delete_doc("LMS Video Checkpoint", checkpoint)
+	frappe.delete_doc("LMS Video Checkpoint", checkpoint, ignore_permissions=True)
 	return checkpoint
 
 
@@ -246,7 +265,7 @@ def save_checkpoint_translation(checkpoint, language, question_text, options):
 	doc.options = []
 	for option in parsed:
 		doc.append("options", {"option_text": option})
-	doc.save()
+	doc.save(ignore_permissions=True)
 	return doc.name
 
 

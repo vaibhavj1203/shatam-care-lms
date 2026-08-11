@@ -130,7 +130,11 @@ def reject_certificate(eligibility_name, reason):
 
 
 def _check_is_assigned_evaluator(doc):
-	if "System Manager" in frappe.get_roles() or "Moderator" in frappe.get_roles():
+	from shatam_care.shatam_care.capabilities import has_capability, is_admin
+
+	# Admins, and anyone delegated the "certificates" capability, may approve
+	# regardless of whether a named Course Evaluator is set on the course.
+	if is_admin() or has_capability("certificates"):
 		return
 	evaluator_user = frappe.db.get_value("Course Evaluator", doc.evaluator, "evaluator")
 	if evaluator_user != frappe.session.user:

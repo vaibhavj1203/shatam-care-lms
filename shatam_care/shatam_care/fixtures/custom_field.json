@@ -127,5 +127,17 @@
   "insert_after": "verification_url",
   "module": "Shatam Care",
   "name": "LMS Certificate-qr_code"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "User",
+  "fieldname": "shatam_capabilities",
+  "fieldtype": "Small Text",
+  "label": "Shatam Care Capabilities",
+  "description": "JSON list of granted capabilities. Admins hold all of them implicitly; this only applies to evaluators.",
+  "insert_after": "role_profile_name",
+  "module": "Shatam Care",
+  "read_only": 1,
+  "name": "User-shatam_capabilities"
  }
 ]

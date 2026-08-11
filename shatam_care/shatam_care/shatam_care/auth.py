@@ -48,6 +48,10 @@ def login_and_get_token(usr, pwd):
 		user_doc.save(ignore_permissions=True)
 
 	roles = frappe.get_roles(user)
+	from shatam_care.shatam_care.capabilities import get_capabilities, is_admin
+
+	capabilities = get_capabilities(user)
+	admin = is_admin(user)
 
 	# Token has been minted — end the cookie session, the frontend only uses
 	# the api_key/api_secret bearer token from here on.
@@ -59,6 +63,10 @@ def login_and_get_token(usr, pwd):
 		"user": user,
 		"full_name": user_doc.full_name,
 		"roles": roles,
+		# The frontend gates navigation on these, so send them with the token
+		# rather than making every session do a second round-trip.
+		"capabilities": capabilities,
+		"is_admin": admin,
 	}
 
 
@@ -67,8 +75,12 @@ def whoami():
 	"""Sanity-check endpoint for the frontend to validate a stored token and
 	refresh cached user/role info without re-authenticating."""
 	user = frappe.session.user
+	from shatam_care.shatam_care.capabilities import get_capabilities, is_admin
+
 	return {
 		"user": user,
 		"full_name": frappe.db.get_value("User", user, "full_name"),
 		"roles": frappe.get_roles(user),
+		"capabilities": get_capabilities(user),
+		"is_admin": is_admin(user),
 	}

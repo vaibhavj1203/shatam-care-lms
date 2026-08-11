@@ -19,16 +19,19 @@ import urllib.request
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000").rstrip("/")
 
 # Frappe enforces password strength — short or common passwords are rejected.
-# Roles are explicit per account. Staff must NOT get "LMS Student" — that
-# would give a teacher or evaluator the learner navigation (course catalogue,
-# enrolment, certificates), which is confusing and wrong.
+#
+# Three personas. An evaluator holds only the capabilities the admin delegates,
+# so two are seeded to show both ends of that range: one who only signs off
+# certificates, and one trusted with content and course setup as well.
+# Staff never get "LMS Student" — that would hand them the learner navigation
+# (catalogue, enrolment, certificates) on top of their own tools.
 ACCOUNTS = [
-    ("teacher", "demo.teacher@example.com", "Teacher-Bamboo-42", "Demo Teacher",
-     ["Course Creator"]),
-    ("evaluator", "demo.evaluator@example.com", "Evaluator-Bamboo-42", "Demo Evaluator",
-     ["Batch Evaluator"]),
     ("student", "demo.student@example.com", "Kestrel-Bamboo-42", "Demo Student",
-     ["LMS Student"]),
+     ["LMS Student"], []),
+    ("evaluator", "demo.evaluator@example.com", "Evaluator-Bamboo-42", "Demo Evaluator",
+     ["Batch Evaluator"], ["certificates"]),
+    ("coordinator", "demo.coordinator@example.com", "Coord-Bamboo-42", "Demo Coordinator",
+     ["Batch Evaluator"], ["courses", "content", "review", "certificates", "people"]),
 ]
 COURSE_TITLE = "Demo: Safe Patient Handling"
 
@@ -61,10 +64,11 @@ admin = call("shatam_care.shatam_care.auth.login_and_get_token",
 
 # --- accounts -----------------------------------------------------------------
 users = {}
-for role, email, password, full_name, roles in ACCOUNTS:
+for role, email, password, full_name, roles, caps in ACCOUNTS:
     created = call("shatam_care.shatam_care.admin_api.create_user", admin,
                    {"email": email, "full_name": full_name,
-                    "roles": json.dumps(roles), "password": password})
+                    "roles": json.dumps(roles), "capabilities": json.dumps(caps),
+                    "password": password})
     users[role] = created["user"]
     if created.get("existed"):
         # Re-run: we can't recover the old password, so set the documented one.
@@ -77,8 +81,9 @@ course = call("shatam_care.shatam_care.admin_api.create_course", admin,
               {"title": COURSE_TITLE,
                "short_introduction": "Demo course for the manual UI walkthrough"})
 
-call("shatam_care.shatam_care.admin_api.add_instructor", admin,
-     {"course": course, "user": users["teacher"]})
+# No named Course Evaluator is required any more: anyone with the
+# "certificates" capability can approve, so a course can't strand its learners
+# by simply not having one assigned.
 call("shatam_care.shatam_care.admin_api.set_course_evaluator", admin,
      {"course": course, "user": users["evaluator"]})
 
@@ -123,6 +128,7 @@ print(f"  course : {COURSE_TITLE}")
 print(f"  lesson : {lesson}  (checkpoint at 0:05)")
 print("\n  logins:")
 print(f"    {'admin':<10} {'Administrator':<30} / admin")
-for role, email, password, _, roles in ACCOUNTS:
-    print(f"    {role:<10} {email:<30} / {password:<22} {roles}")
+for role, email, password, _, roles, caps in ACCOUNTS:
+    can = ", ".join(caps) if caps else "(learner)"
+    print(f"    {role:<12} {email:<32} / {password:<20} can: {can}")
 print()

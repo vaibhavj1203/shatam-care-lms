@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { login as loginRequest } from "@/lib/frappe-client";
+import { Capability, login as loginRequest } from "@/lib/frappe-client";
 import { getServerSnapshot, getSnapshot, subscribe, setToken, clearToken } from "@/lib/auth-store";
 
 type AuthContextValue = {
@@ -17,6 +17,8 @@ type AuthContextValue = {
 	login: (usr: string, pwd: string) => Promise<void>;
 	logout: () => void;
 	hasRole: (role: string) => boolean;
+	/** Capability check — this is what gates navigation and actions. */
+	can: (capability: Capability) => boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -50,8 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		return user?.roles.includes(role) ?? false;
 	}
 
+	function can(capability: Capability) {
+		return user?.capabilities?.includes(capability) ?? false;
+	}
+
 	return (
-		<AuthContext.Provider value={{ user, ready, login, logout, hasRole }}>
+		<AuthContext.Provider value={{ user, ready, login, logout, hasRole, can }}>
 			{children}
 		</AuthContext.Provider>
 	);

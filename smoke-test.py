@@ -109,18 +109,24 @@ def main():
     log(bool(course), "create_course", course)
 
     teacher = call(
-        "shatam_care.shatam_care.admin_api.create_student",
+        "shatam_care.shatam_care.admin_api.create_user",
         admin,
-        {"email": f"smoke.teacher.{RUN}@example.com", "full_name": "Smoke Teacher"},
+        {"email": f"smoke.teacher.{RUN}@example.com", "full_name": "Smoke Teacher",
+         "roles": json.dumps(["Batch Evaluator"]),
+         "capabilities": json.dumps(["content"])},
     )
     call("shatam_care.shatam_care.admin_api.add_instructor", admin,
          {"course": course, "user": teacher["user"]})
     log(True, "add_instructor")
 
+    # Evaluators are created with an explicit capability set — "evaluator" means
+    # whatever the admin delegates, so approving certificates must be granted.
     evaluator = call(
-        "shatam_care.shatam_care.admin_api.create_student",
+        "shatam_care.shatam_care.admin_api.create_user",
         admin,
-        {"email": f"smoke.evaluator.{RUN}@example.com", "full_name": "Smoke Evaluator"},
+        {"email": f"smoke.evaluator.{RUN}@example.com", "full_name": "Smoke Evaluator",
+         "roles": json.dumps(["Batch Evaluator"]),
+         "capabilities": json.dumps(["certificates"])},
     )
     call("shatam_care.shatam_care.admin_api.set_course_evaluator", admin,
          {"course": course, "user": evaluator["user"]})
@@ -240,10 +246,18 @@ def main():
     etok = call("shatam_care.shatam_care.auth.login_and_get_token",
                 params={"usr": evaluator["user"], "pwd": evaluator["password"]})
     queue = call("shatam_care.shatam_care.api.evaluator_queue", etok)
-    log(isinstance(queue, list) and len(queue) >= 1, "evaluator sees pending approval", queue)
+    # The queue is global for anyone holding the "certificates" capability, so
+    # pick THIS run's learner rather than whatever happens to be oldest.
+    mine = [row for row in queue if row["member"] == student["user"]]
+    log(len(mine) == 1, "evaluator sees this run's pending approval", queue)
+
+    denied = call("shatam_care.shatam_care.admin_api.create_course", etok,
+                  {"title": "evaluator should not be able to create this"},
+                  expect_error=True)
+    log("_error" in denied, "evaluator WITHOUT 'courses' cannot create a course")
 
     approved = call("shatam_care.shatam_care.certificate_eligibility.approve_certificate",
-                    etok, {"eligibility_name": queue[0]["name"]})
+                    etok, {"eligibility_name": mine[0]["name"]})
     log(approved.get("status") == "Approved", "certificate approved", approved)
 
     certs = call("shatam_care.shatam_care.api.my_certificates", stok)

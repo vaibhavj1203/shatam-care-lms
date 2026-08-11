@@ -1,6 +1,8 @@
 // Domain-specific helpers on top of frappe-client.ts, scoped to what the
 // student/teacher/admin/evaluator flows need (PLAN.md sections 3.1-3.8).
-import { callMethod, createDoc, getDoc, getList } from "./frappe-client";
+import { Capability, callMethod, createDoc, getDoc, getList } from "./frappe-client";
+
+export type { Capability };
 
 export type Course = {
 	name: string;
@@ -586,6 +588,76 @@ export function listStudents(course?: string, studentGroup?: string) {
 	});
 }
 
+export type AppRole = "LMS Student" | "Course Creator" | "Batch Evaluator" | "Moderator";
+
+// Creates an account with an explicit role set. Distinct from createStudent,
+// which always grants "LMS Student" — using that for staff gives a teacher or
+// evaluator the learner navigation (catalogue, enrolment, certificates) on top
+// of their own, which is confusing and wrong.
+export function createUser(
+	email: string,
+	fullName: string,
+	roles: AppRole[],
+	capabilities: Capability[] = [],
+	mobileNo?: string,
+	password?: string,
+) {
+	return callMethod<{ user: string; password: string | null; existed: boolean }>(
+		"shatam_care.shatam_care.admin_api.create_user",
+		{
+			email,
+			full_name: fullName,
+			roles: JSON.stringify(roles),
+			capabilities: JSON.stringify(capabilities),
+			mobile_no: mobileNo,
+			password,
+		},
+	);
+}
+
+export type CapabilityInfo = { key: Capability; label: string; description: string };
+
+export function listCapabilities() {
+	return callMethod<CapabilityInfo[]>("shatam_care.shatam_care.capabilities.list_capabilities");
+}
+
+export type Person = {
+	user: string;
+	full_name: string;
+	enabled: boolean;
+	roles: AppRole[];
+	capabilities: Capability[];
+};
+
+export function listPeople(search?: string) {
+	return callMethod<Person[]>("shatam_care.shatam_care.admin_api.list_people", { search });
+}
+
+export function updatePerson(user: string, roles?: AppRole[], capabilities?: Capability[]) {
+	return callMethod<{ user: string; roles?: AppRole[]; capabilities?: Capability[] }>(
+		"shatam_care.shatam_care.admin_api.update_person",
+		{
+			user,
+			roles: roles ? JSON.stringify(roles) : undefined,
+			capabilities: capabilities ? JSON.stringify(capabilities) : undefined,
+		},
+	);
+}
+
+export function setUserRoles(user: string, roles: AppRole[]) {
+	return callMethod<AppRole[]>("shatam_care.shatam_care.admin_api.set_user_roles", {
+		user,
+		roles: JSON.stringify(roles),
+	});
+}
+
+export function resetUserPassword(user: string, password?: string) {
+	return callMethod<{ user: string; password: string }>(
+		"shatam_care.shatam_care.admin_api.reset_password",
+		{ user, password },
+	);
+}
+
 export function createStudent(
 	email: string,
 	fullName: string,
@@ -629,11 +701,11 @@ export type StudentGroup = {
 	description?: string;
 };
 
+// Via the capability gate, not /api/resource: the doctype grants read to
+// System Manager / Moderator only, so a delegated coordinator holding "people"
+// would be blocked by doctype permissions they don't hold.
 export function listStudentGroups() {
-	return getList<StudentGroup>("LMS Student Group", {
-		fields: ["name", "title", "region", "coordinator", "description"],
-		orderBy: "title asc",
-	});
+	return callMethod<StudentGroup[]>("shatam_care.shatam_care.admin_api.list_student_groups");
 }
 
 export function createStudentGroup(data: {
@@ -642,5 +714,8 @@ export function createStudentGroup(data: {
 	coordinator?: string;
 	description?: string;
 }) {
-	return createDoc<StudentGroup>("LMS Student Group", data);
+	return callMethod<StudentGroup>(
+		"shatam_care.shatam_care.admin_api.create_student_group",
+		data as unknown as Record<string, unknown>,
+	);
 }

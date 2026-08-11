@@ -21,11 +21,11 @@ real student:
 import frappe
 from frappe import _
 
-ADMIN_ROLES = ("System Manager", "Moderator")
+from shatam_care.shatam_care.capabilities import has_capability, is_admin
 
 
 def _is_admin():
-	return any(role in frappe.get_roles() for role in ADMIN_ROLES)
+	return is_admin()
 
 
 def _is_course_instructor(course):
@@ -34,13 +34,16 @@ def _is_course_instructor(course):
 
 
 def _check_can_author(course):
-	if not (_is_admin() or _is_course_instructor(course)):
-		frappe.throw(_("You cannot edit content on this course."), frappe.PermissionError)
+	"""Authoring is allowed for admins, anyone delegated the "content"
+	capability, and the course's own instructors."""
+	if _is_admin() or has_capability("content") or _is_course_instructor(course):
+		return
+	frappe.throw(_("You cannot edit content on this course."), frappe.PermissionError)
 
 
 def _check_can_view(course):
 	"""Enrolled learners, the course's instructors, and admins."""
-	if _is_admin() or _is_course_instructor(course):
+	if _is_admin() or has_capability("content") or _is_course_instructor(course):
 		return
 	if not frappe.db.exists("LMS Enrollment", {"course": course, "member": frappe.session.user}):
 		frappe.throw(_("You must be enrolled in this course to view its content."), frappe.PermissionError)
