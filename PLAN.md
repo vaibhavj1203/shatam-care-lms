@@ -17,17 +17,36 @@ integration.
 
 ## 2. Personas
 
-| Persona | Role |
-|---|---|
-| **Admin** | Manages everything: reviews/publishes teacher content, oversees all courses, retains override/visibility on certificate approvals |
-| **Teacher** (multiple) | Uploads chapters/lessons per course; content goes through admin review before publishing |
-| **Evaluator** (per-course role) | Approves certificate issuance for students in their course, once the system has auto-gated on completion criteria |
-| **Student** | Enrolls in courses, watches/rewatches lessons, completes in-video quizzes and the final assessment, receives certificate |
+> **Revised 2026-08-12.** The original four personas (Admin, Teacher, Evaluator,
+> Student) became three. The separate Teacher persona was dropped — admins author
+> content themselves — and Evaluator stopped being a fixed job. An evaluator now
+> holds only the rights an admin delegates, chosen per person from five
+> capabilities: manage courses, author content, review content, approve
+> certificates, manage people. Two evaluators at different centres can therefore
+> be trusted with quite different things.
+>
+> Consequence worth stating plainly: Q12 originally separated evaluator from
+> teacher so nobody could approve certificates for content they authored. With
+> delegation, an admin *can* grant both to one person. The safeguard is now a
+> matter of policy rather than something the system enforces.
 
-Evaluator is a distinct, per-course-scoped role (reusing Frappe LMS's existing
-`Course Evaluator` concept) — not the same person approving their own students
-by default, to avoid a teacher grading their own course's competency with no
-second check.
+
+| Persona | What they can do |
+|---|---|
+| **Admin** | Everything, implicitly. Authors content, runs courses, approves certificates, manages accounts. |
+| **Evaluator** | Only what an admin delegates, per person: any subset of `courses`, `content`, `review`, `certificates`, `people`. Two evaluators may hold entirely different sets. |
+| **Student** | Enrols, watches and rewatches lessons, answers in-video checkpoints, takes the final assessment, receives a certificate. |
+
+Capabilities are stored per user (`User.shatam_capabilities`), not per role,
+because two evaluators at different centres are legitimately trusted with
+different things. `capabilities.py` is the single definition; every gated API
+calls `check_capability()`.
+
+Frappe's own doctype-role permissions are deliberately **not** a second gate on
+these paths — capability checks are the authorisation boundary, and writes
+behind them run with `ignore_permissions=True`. Leaving both active meant the
+capability layer said yes and the write then failed for anyone who wasn't a
+full admin.
 
 ## 3. Core flows
 

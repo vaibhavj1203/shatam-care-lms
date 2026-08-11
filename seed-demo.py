@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed a clean demo scenario for the manual UI walkthrough (see TEST-SCRIPT.md).
+"""Seed a clean demo scenario for the manual UI walkthrough (see test-steps.txt).
 
 Creates four logins with known passwords, a published course whose lesson has an
 in-video checkpoint at 5 seconds, and a one-question final assessment.
@@ -123,7 +123,7 @@ call("shatam_care.shatam_care.admin_api.update_course", admin,
 call("shatam_care.shatam_care.admin_api.enroll_student", admin,
      {"course": course, "member": users["student"]})
 
-print("\nDemo scenario ready — see TEST-SCRIPT.md\n")
+print("\nDemo scenario ready — see test-steps.txt\n")
 print(f"  course : {COURSE_TITLE}")
 print(f"  lesson : {lesson}  (checkpoint at 0:05)")
 print("\n  logins:")

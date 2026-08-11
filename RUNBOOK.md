@@ -97,7 +97,7 @@ python3 smoke-test.py http://localhost:8000
 ```
 
 Walks the whole product over the real HTTP API and should end with
-`passed: 33   failed: 0`:
+`passed: 34   failed: 0`:
 
 admin creates a course → assigns teacher + evaluator → builds the final
 assessment → creates chapter, lesson and an in-video checkpoint → approves and
@@ -138,20 +138,27 @@ is accepted.
 1. Sign in as `Administrator` / `admin`.
 2. **Manage Courses** → *+ New course* → give it a title.
 3. Open the course:
-   - **Teachers** — search a user, add them (also grants the Course Creator role)
-   - **Certificate Evaluator** — set one (grants Batch Evaluator, creates the
-     Course Evaluator record). Certificates cannot be approved without this.
+   - **Teachers** — search a user, add them as an instructor on this course.
+     Authoring rights come from the "Author content" capability, granted on
+     the People screen, not from being listed here.
+   - **Certificate Evaluator** — optional. Anyone holding the "Approve
+     certificates" capability sees every pending approval, so a course without a
+     named evaluator can still certify its learners.
    - **Final Assessment** — create it, set the pass mark, add questions. Tick the
      checkbox beside each correct option; ticking more than one makes it
      multi-answer. Max 4 options.
    - **Publish** when ready.
-4. **Students** → *+ New student* to register a learner and enroll them.
-   **Copy the temporary password** — it is shown once.
+4. **People** → *+ New person* → pick Student, Evaluator or Admin. For an
+   evaluator, tick which of the five rights they get; these are editable later
+   via *Edit rights*. **Copy the temporary password** — shown once.
 5. **Groups** → optional region/coordinator tags for reporting.
 
-### 4b. As teacher — `My Lessons`
+### 4b. Authoring — `Content`
 
-1. Sign in as the user you added as a teacher.
+There is no separate Teacher persona. Authoring is done by an admin, or by an
+evaluator granted the "Author content" capability.
+
+1. Sign in as an admin, or an evaluator holding *Author content*.
 2. Pick the course → *+ Add lesson* → chapter title, lesson title, YouTube URL
    or bare video ID.
 3. Open the lesson:

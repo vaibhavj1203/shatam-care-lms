@@ -2,11 +2,16 @@ SHATAM CARE LMS - MANUAL TEST STEPS
 Everything is at http://localhost:3000
 Sign out between roles, or use a private window.
 
-LOGINS
-  admin      Administrator                / admin
-  teacher    demo.teacher@example.com     / Teacher-Bamboo-42
-  evaluator  demo.evaluator@example.com   / Evaluator-Bamboo-42
-  student    demo.student@example.com     / Kestrel-Bamboo-42
+THREE PERSONAS
+  Admin      - can do everything.
+  Student    - takes courses, earns certificates.
+  Evaluator  - does ONLY what the admin ticks. Five rights can be granted:
+                 Manage courses     create/edit/publish courses + assessments
+                 Author content     chapters, lessons, in-video checkpoints
+                 Review content     approve lessons submitted for review
+                 Approve certificates
+                 Manage people      accounts, passwords, enrolments, groups
+               So "Evaluator" is not one job - it is whatever you delegate.
 
 BEFORE YOU START
   cd frappe
@@ -14,106 +19,126 @@ BEFORE YOU START
   cd shatam-care-web && npm run dev
   cd .. && python3 seed-demo.py
 
+  The seeder prints four logins. You will also CREATE accounts yourself in
+  Part 1, which is the real point of this script.
 
-PART 1 - STUDENT
-1.  Go to localhost:3000. Log in as student.
-    See: only "Courses" and "Certificates" in the top bar. No admin links.
-2.  Click Courses.
-    See: a list of course cards.
-3.  Open "Demo: Safe Patient Handling".
-    See: the real course title as the heading, one chapter with one lesson,
-         a Language dropdown, and a Final Assessment card saying pass mark 50%.
-4.  Open the lesson "Lifting a patient safely".
-    See: the video player loads and plays.
-5.  Wait until 0:05.  <-- MOST IMPORTANT STEP
-    See: video PAUSES and a question appears over it.
-6.  Choose "Your knees", click Submit answer.
-    See: "Correct!"
-7.  Click Continue watching.
-    See: overlay closes, video RESUMES.
-8.  Reload the page and play again from the start.
-    See: the question does NOT appear a second time.
-9.  Let the video play to the end.
-    See: "Lesson marked complete".
-10. Go back to the course. Click Take assessment.
-    See: one question, header says pass mark 50%.
-11. Choose "Your back", click Submit assessment.
-    See: "You passed!" and a note about evaluator approval.
-12. Go back to the course page.
-    See: Certificate section says awaiting evaluator approval.
-13. Change the Language dropdown.
-    See: "Saved" appears.
 
-PART 2 - EVALUATOR
-14. Sign out. Log in as evaluator.
-    See: ONLY "Approvals" in the top bar. No Courses, no Certificates.
-         (Staff are not learners. If you see learner tabs, the account
-          wrongly has the LMS Student role.)
-15. Click Approvals.
-    See: the student listed as pending.
-16. Click "Approve & issue certificate".
-    See: the row disappears.
-
-PART 3 - STUDENT COLLECTS CERTIFICATE
-17. Sign out. Log in as student. Click Certificates.
-    See: a certificate with an ID like SCF-2026-000006.
-18. Click "Verification page".
-    See: "Valid Certificate" with name, course and date.
-19. Copy that URL into a private window (logged out).
-    See: still shows "Valid Certificate".
-20. Click "Download PDF".
-    See: a certificate PDF downloads and opens.
-
-PART 4 - TEACHER
-21. Sign out. Log in as teacher. Click My Lessons.
-    See: ONLY "My Lessons" in the top bar. No Courses, no Certificates,
-         and no way to enrol in anything.
-    See: the demo course with its lesson marked Approved.
-22. Click "+ Add lesson". Chapter: Module 1 - Foundations.
-    Title: anything. YouTube: dQw4w9WgXcQ. Create.
-    See: new lesson appears with a Draft badge.
-23. Open your new lesson.
-    See: the video player loads.
-24. Let it play a few seconds, click "Pause here & add quiz checkpoint".
-    See: video pauses, a form appears with that timestamp.
-25. Type a question, fill both options, tick the correct one, Save checkpoint.
-    See: a green marker appears on the bar under the video.
-26. Click the timestamp next to the checkpoint.
-    See: the video jumps to that point.
-27. Click Edit on the checkpoint, change the question, Save changes.
-    See: the new wording in the list.
-28. Click Delete on that checkpoint.
-    See: it disappears (allowed, since no student has answered it).
-29. Click "Submit for review".
-    See: status becomes Submitted for Review.
-
-PART 5 - ADMIN
-30. Sign out. Log in as admin.
-    See: all eight cards on the dashboard.
-31. Click Review.
-    See: the teacher's lesson from step 29. Click Approve. It disappears.
-32. Click Manage Courses.
-    See: courses with lesson and enrolment counts, Published/Draft badges.
-        Courses missing an evaluator or assessment are flagged in amber.
-33. Click "+ New course", give it a title, Create. Then open it.
-34. Under Teachers, search "demo.teacher" and add them.
-    See: they appear in the list.
-35. Under Certificate Evaluator, search "demo.evaluator" and select them.
-    See: "Currently: demo.evaluator@example.com".
-36. Under Final Assessment, set a pass mark, click Create.
-    Then add a question with two options, tick the correct one, Add question.
+PART 1 - ADMIN SETS EVERYTHING UP
+1.  Go to localhost:3000. Log in as Administrator / admin.
+    See: dashboard cards for Courses, People, Groups, Review, Approvals,
+         Content.
+2.  Click People.
+    See: a list of accounts. Each row shows a persona badge
+         (Admin / Evaluator / Student) and, for evaluators, what they can do.
+3.  Click "+ New person". Choose persona STUDENT.
+    Name: Test Learner. Email: test.learner@example.com
+    Try password demo1234 first - it should be REJECTED as too weak.
+    Then use: Learner-Bamboo-42
+    See: created, and a temporary password shown once. Write it down.
+4.  Click "+ New person". Choose persona EVALUATOR.
+    Name: Cert Only. Email: test.certonly@example.com
+    Password: CertOnly-Bamboo-42
+    Tick ONLY "Approve certificates". Leave the other four unticked.
+    See: created.
+5.  Click "+ New person". Choose persona EVALUATOR.
+    Name: Full Coordinator. Email: test.coord@example.com
+    Password: Coord2-Bamboo-42
+    Tick ALL FIVE rights.
+    See: created.
+6.  In the People list, find "Cert Only" and click "Edit rights".
+    See: checkboxes reflecting only "Approve certificates".
+    Tick "Review content" as well, save, then untick it again and save.
+    See: the row updates both times. (This is the "editable later" behaviour.)
+7.  Click Courses (the admin one). Click "+ New course".
+    Title: Manual Test Course.  Leave the introduction BLANK.
+    See: it creates successfully. (A title-only course must work.)
+8.  Open the course. Under Final Assessment set pass mark 50, click Create.
+    Then add a question: "Which is safe?" with options "Bend knees" (tick as
+    correct) and "Bend back". Add question.
     See: the question appears in the list.
-37. Click Publish.
+9.  Click Content in the top bar. Open Manual Test Course.
+    Click "+ Add lesson". Chapter: Module A. Title: Lesson A.
+    YouTube: dQw4w9WgXcQ. Create.
+    See: lesson appears with a Draft badge.
+10. Open Lesson A. Let the video play a few seconds.
+    Click "Pause here & add quiz checkpoint".
+    See: video pauses, a form appears with that timestamp.
+11. Question: "What do you bend?" Options "Knees" (tick correct) and "Back".
+    Save checkpoint.
+    See: a marker appears on the bar under the video.
+12. Click the checkpoint's timestamp.
+    See: the video jumps to that point.
+13. Click Edit on the checkpoint, change the wording, Save changes.
+    Then click Delete on it.
+    See: it updates, then disappears (nobody has answered it yet).
+14. Add the checkpoint again (as in steps 10-11) so the learner has one.
+15. Click "Submit for review".
+    See: status becomes Submitted for Review.
+16. Click Review in the top bar.
+    See: Lesson A pending. Click Approve. It disappears.
+17. Go to Courses, open Manual Test Course, click Publish.
     See: badge changes to Published.
-38. Click Students, then "+ New student".
-    First try password demo1234 - it should be REJECTED as too weak.
-    Then register someone properly and enrol them in your new course.
-    See: a temporary password shown once. Write it down.
-39. Click Groups. Create a group, e.g. "Nashik - Coordinator Priya".
-    See: it appears in the list.
-40. Sign out. Log in as the student you made in step 38.
-    Open your new course and click Enrol.
-    See: enrolment works and the lessons become clickable.
+18. Go to People. Find Test Learner and enrol them in Manual Test Course.
+    (Or do it from the enrol option on the new-person form.)
+
+
+PART 2 - EVALUATOR WITH ONE RIGHT
+19. Sign out. Log in as test.certonly@example.com / CertOnly-Bamboo-42
+    See: ONLY "Approvals" in the top bar.
+         NO Courses, NO Content, NO People, NO Review, NO Certificates.
+         This is the whole point of capabilities - verify it carefully.
+20. Click Approvals.
+    See: the queue loads (probably empty until Part 4).
+
+PART 3 - EVALUATOR WITH ALL RIGHTS
+21. Sign out. Log in as test.coord@example.com / Coord2-Bamboo-42
+    See: Content, Courses, People, Groups, Review, Approvals in the top bar.
+         Still NO learner tabs - staff are not learners.
+22. Click Courses. Create a course titled "Coordinator Course".
+    See: it succeeds. (Same rights as an admin for courses.)
+23. Click People.
+    See: the accounts list loads - they hold "Manage people".
+
+PART 4 - STUDENT
+24. Sign out. Log in as test.learner@example.com / Learner-Bamboo-42
+    See: ONLY "Courses" and "Certificates". No admin tabs at all.
+25. Click Courses, open Manual Test Course.
+    See: the real course title as the heading, Module A with Lesson A,
+         a Language dropdown, and a Final Assessment card saying pass mark 50%.
+         (If it says 100%, that is a bug.)
+26. Open Lesson A. Let the video reach your checkpoint's timestamp.
+    <-- MOST IMPORTANT STEP
+    See: the video PAUSES and the question appears over it.
+27. Choose "Knees", click Submit answer.
+    See: "Correct!"
+28. Click Continue watching.
+    See: the overlay closes and the video RESUMES.
+29. Reload the page and play from the start again.
+    See: the question does NOT appear a second time.
+30. Let the video play to the end.
+    See: "Lesson marked complete".
+31. Go back to the course, click Take assessment.
+    See: your question, header says pass mark 50%.
+32. Choose "Bend knees", Submit assessment.
+    See: "You passed!" and a note about awaiting approval.
+33. Go back to the course page.
+    See: Certificate section says awaiting approval.
+34. Change the Language dropdown.
+    See: "Saved".
+
+PART 5 - APPROVAL AND CERTIFICATE
+35. Sign out. Log in as test.certonly@example.com again. Click Approvals.
+    See: Test Learner listed as pending.
+36. Click "Approve & issue certificate".
+    See: the row disappears.
+37. Sign out. Log in as test.learner@example.com. Click Certificates.
+    See: a certificate with an ID like SCF-2026-000014.
+38. Click "Verification page".
+    See: "Valid Certificate" with name, course and date.
+39. Copy that URL into a private window (logged out).
+    See: still shows "Valid Certificate".
+40. Click "Download PDF".
+    See: a certificate PDF downloads and opens.
 
 
 IF SOMETHING FAILS
@@ -122,18 +147,22 @@ IF SOMETHING FAILS
   Press F12, check the Network tab for failed (red) requests.
   Backend logs: docker compose logs --tail 100 frappe
 
-KNOWN GAPS - NOT BUGS
-  There is no signup page. Students must be created by an admin (step 38).
-  Branding is placeholder - green colours, no logo, stock certificate design.
+WHAT EACH ACCOUNT SHOULD SEE IN THE TOP BAR
+  Student              Courses, Certificates
+  Evaluator (certs)    Approvals
+  Evaluator (all five) Content, Courses, People, Groups, Review, Approvals
+  Admin                everything
+  Staff should never see learner tabs. If they do, the account has the
+  LMS Student role by mistake.
 
-ROLES - WHAT EACH ACCOUNT SHOULD SEE
-  student    Courses, Certificates
-  teacher    My Lessons
-  evaluator  Approvals
-  admin      everything
-  A teacher or evaluator seeing learner tabs means their account has the
-  LMS Student role by mistake. Re-run: python3 seed-demo.py
+KNOWN GAPS - NOT BUGS
+  No signup page. Every account is created by an admin (steps 3-5).
+  Branding is placeholder - green colours, no logo, stock certificate design.
+  Older accounts may show the badge "Teacher (legacy)" - the separate Teacher
+  persona was removed; they still work but new ones cannot be created.
+  Assessment questions cannot be translated from the UI yet (checkpoints can).
 
 WHEN DONE
   docker compose stop
-  Do not use "docker compose down" - it deletes the setup inside the container.
+  Do not use "docker compose down" - it removes the container and the bench
+  inside it. Source code is safe either way; only the setup is lost.
