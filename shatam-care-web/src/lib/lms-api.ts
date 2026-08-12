@@ -153,6 +153,20 @@ export function getCertificate(name: string) {
 
 // --- Teacher authoring (PLAN.md 3.6 / SCHEMA.md content_review.py) ---
 
+// Courses the signed-in user may author. Admins and anyone with "content"
+// get all of them; everyone else only those they instruct. Replaces the old
+// client-side instructor filter, which showed admins an empty list.
+export function getAuthorableCourses(): Promise<Course[]> {
+	return callMethod<Course[]>("shatam_care.shatam_care.content.courses_i_can_author");
+}
+
+export function changeMyPassword(currentPassword: string, newPassword: string) {
+	return callMethod<{ user: string }>("shatam_care.shatam_care.auth.change_my_password", {
+		current_password: currentPassword,
+		new_password: newPassword,
+	});
+}
+
 export async function getMyCourses(user: string): Promise<Course[]> {
 	const rows = await getList<{ parent: string }>("Course Instructor", {
 		filters: [["instructor", "=", user]],

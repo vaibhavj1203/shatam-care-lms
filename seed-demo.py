@@ -68,7 +68,11 @@ for role, email, password, full_name, roles, caps in ACCOUNTS:
     created = call("shatam_care.shatam_care.admin_api.create_user", admin,
                    {"email": email, "full_name": full_name,
                     "roles": json.dumps(roles), "capabilities": json.dumps(caps),
-                    "password": password})
+                    "password": password,
+                    # The API now refuses duplicate emails so admins can't
+                    # silently overwrite an account from the UI. The seeder
+                    # genuinely means "reset these demo accounts", so opts in.
+                    "update_if_exists": True})
     users[role] = created["user"]
     if created.get("existed"):
         # Re-run: we can't recover the old password, so set the documented one.

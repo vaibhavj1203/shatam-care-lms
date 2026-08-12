@@ -59,6 +59,9 @@ PART 1 - ADMIN SETS EVERYTHING UP
     Password: Coord2-Bamboo-42
     Tick ALL FIVE rights.
     See: created.
+5b. Try "+ New person" again with an email you already used.
+    See: refused - "An account already exists for ...". It must NOT silently
+         create or overwrite.
 6.  In the People list, find "Cert Only" and click "Edit rights".
     See: checkboxes reflecting only "Approve certificates".
     Tick "Review content" as well, save, then untick it again and save.
@@ -80,6 +83,9 @@ PART 1 - ADMIN SETS EVERYTHING UP
 11. Question: "What do you bend?" Options "Knees" (tick correct) and "Back".
     Save checkpoint.
     See: a marker appears on the bar under the video.
+11b. Add a SECOND checkpoint further into the video (repeat step 10-11).
+    See: two markers. A lesson can hold any number; the player fires them in
+         time order.
 12. Click the checkpoint's timestamp.
     See: the video jumps to that point.
 13. Click Edit on the checkpoint, change the wording, Save changes.
@@ -139,6 +145,10 @@ PART 4 - STUDENT
     See: Certificate section says awaiting approval.
 34. Change the Language dropdown.
     See: "Saved".
+34b. Click your own name in the top bar (right-hand side).
+    See: the My Account page. Change your password: wrong current password
+         must be refused; correct one must work. Sign out and back in with
+         the new password to confirm.
 
 PART 5 - APPROVAL AND CERTIFICATE
 35. Sign out. Log in as test.certonly@example.com again. Click Approvals.

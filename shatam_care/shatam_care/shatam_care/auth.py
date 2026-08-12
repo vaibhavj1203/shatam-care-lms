@@ -20,6 +20,7 @@ Docker access is granted.
 """
 
 import frappe
+from frappe import _
 from frappe.auth import LoginManager
 
 
@@ -84,3 +85,31 @@ def whoami():
 		"capabilities": get_capabilities(user),
 		"is_admin": is_admin(user),
 	}
+
+
+@frappe.whitelist()
+def change_my_password(current_password, new_password):
+	"""Let a signed-in user change their own password.
+
+	Every account is created by an admin with a generated password, so without
+	this the learner is stuck with a string they never chose and cannot change.
+	Requires the current password: a stolen API token should not be enough to
+	take over the account permanently.
+	"""
+	user = frappe.session.user
+	if user in ("Guest", None):
+		frappe.throw(_("You must be signed in."), frappe.AuthenticationError)
+
+	# Raises AuthenticationError if the current password is wrong.
+	from frappe.utils.password import check_password
+
+	try:
+		check_password(user, current_password)
+	except frappe.AuthenticationError:
+		frappe.throw(_("Your current password is not correct."), frappe.AuthenticationError)
+
+	user_doc = frappe.get_doc("User", user)
+	# Frappe's own strength rules apply on save and surface as a clear message.
+	user_doc.new_password = new_password
+	user_doc.save(ignore_permissions=True)
+	return {"user": user}

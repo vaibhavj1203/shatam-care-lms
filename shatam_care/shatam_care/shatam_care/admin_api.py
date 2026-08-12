@@ -130,7 +130,12 @@ def add_instructor(course, user):
 def remove_instructor(course, user):
 	check_capability("courses")
 	doc = frappe.get_doc("LMS Course", course)
-	doc.instructors = [row for row in doc.instructors if row.instructor != user]
+	remaining = [row for row in doc.instructors if row.instructor != user]
+	if not remaining:
+		# LMS Course.instructors is mandatory — an empty list fails validation
+		# on save with a confusing error, so refuse clearly up front.
+		frappe.throw(_("A course must keep at least one teacher. Add another before removing this one."))
+	doc.instructors = remaining
 	doc.save(ignore_permissions=True)
 	return doc.name
 
@@ -359,7 +364,8 @@ def list_people(search=None):
 
 
 @frappe.whitelist()
-def create_user(email, full_name, roles, mobile_no=None, password=None, capabilities=None):
+def create_user(email, full_name, roles, mobile_no=None, password=None, capabilities=None,
+	update_if_exists=False):
 	"""Create a staff account with an explicit set of roles.
 
 	Distinct from `create_student`, which always grants `LMS Student`. Using
@@ -376,6 +382,16 @@ def create_user(email, full_name, roles, mobile_no=None, password=None, capabili
 
 	generated = password or random_string(10)
 	if frappe.db.exists("User", email):
+		# Silently reusing the account was worse than a no-op: creating "a
+		# student" with an existing evaluator's address overwrote their roles
+		# and capabilities, while the UI reported a brand-new account. Callers
+		# that genuinely mean "reset this account" (the demo seeder) opt in.
+		# Over HTTP this arrives as a string ("1"/"true"), not a bool.
+		allow_reuse = str(update_if_exists).lower() in ("1", "true", "yes")
+		if not allow_reuse:
+			frappe.throw(
+				_("An account already exists for {0}. Edit that account instead of creating a new one.").format(email)
+			)
 		user_doc = frappe.get_doc("User", email)
 		existed = True
 	else:
@@ -492,7 +508,10 @@ def search_users(query, limit=20):
 		"User",
 		filters=[
 			["enabled", "=", 1],
-			["name", "not in", ["Administrator", "Guest"]],
+			# Administrator is intentionally included: removing it from a course's
+			# instructors used to be irreversible, because it could never be
+			# found again to re-add.
+			["name", "not in", ["Guest"]],
 			["full_name", "like", f"%{query}%"],
 		],
 		fields=["name", "full_name"],

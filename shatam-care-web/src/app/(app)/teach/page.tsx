@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
 	Course,
 	LessonSummary,
-	getMyCourses,
+	getAuthorableCourses,
 	getCourseLessonsWithReviewStatus,
 	getCourseContent,
 	getOrCreateChapter,
@@ -22,7 +22,7 @@ export default function TeachPage() {
 	useEffect(() => {
 		if (!user) return;
 		let cancelled = false;
-		getMyCourses(user.user)
+		getAuthorableCourses()
 			.then((rows) => {
 				if (!cancelled) setCourses(rows);
 			})
@@ -46,7 +46,7 @@ export default function TeachPage() {
 			<h1 className="text-2xl font-semibold text-green-900">My Lessons</h1>
 			{courses.length === 0 && (
 				<p className="text-gray-500 text-sm">
-					You aren&apos;t listed as an instructor on any course yet. Ask an admin to add you.
+					No courses to author yet. Create one under Courses, or ask an admin to add you as a teacher.
 				</p>
 			)}
 			{courses.map((course) => (

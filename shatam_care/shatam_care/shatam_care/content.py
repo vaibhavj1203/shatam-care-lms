@@ -217,3 +217,35 @@ def get_lesson_for_student(lesson):
 	return frappe.db.get_value(
 		"Course Lesson", lesson, ["name", "title", "course", "chapter", "youtube"], as_dict=True
 	)
+
+
+@frappe.whitelist()
+def courses_i_can_author():
+	"""Courses to show on the Content screen.
+
+	Admins and anyone holding "content" get every course — an admin was
+	previously told "you aren't an instructor on any course", which is wrong:
+	full rights should never be narrower than a delegated subset. Everyone
+	else sees only courses they're listed as an instructor on.
+	"""
+	from shatam_care.shatam_care.capabilities import has_capability, is_admin
+
+	if is_admin() or has_capability("content"):
+		names = frappe.get_all("LMS Course", pluck="name", order_by="creation desc")
+	else:
+		names = list({
+			row.parent
+			for row in frappe.get_all(
+				"Course Instructor",
+				filters={"instructor": frappe.session.user},
+				fields=["parent"],
+			)
+		})
+	if not names:
+		return []
+	return frappe.get_all(
+		"LMS Course",
+		filters={"name": ["in", names]},
+		fields=["name", "title", "short_introduction", "published"],
+		order_by="creation desc",
+	)

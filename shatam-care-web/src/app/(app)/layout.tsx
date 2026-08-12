@@ -43,7 +43,9 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
 					)}
 					{can("review") && <Link href="/admin/reviews">Review</Link>}
 					{can("certificates") && <Link href="/evaluate">Approvals</Link>}
-					<span className="opacity-80">{user.fullName}</span>
+					<Link href="/account" className="opacity-90 underline decoration-dotted">
+						{user.fullName}
+					</Link>
 					<button onClick={logout} className="underline">
 						Sign out
 					</button>
