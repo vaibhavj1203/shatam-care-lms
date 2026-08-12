@@ -17,10 +17,24 @@ BEFORE YOU START
   cd frappe
   docker compose up -d
   cd shatam-care-web && npm run dev
-  cd .. && python3 seed-demo.py
 
-  The seeder prints four logins. You will also CREATE accounts yourself in
-  Part 1, which is the real point of this script.
+  You do NOT need the seeder for this script. You create every account and
+  course yourself in Part 1 - that is the point, since account creation is
+  itself the thing being tested. The only login you need to begin is:
+
+      Administrator / admin
+
+  (If you just want to poke around without doing Part 1, run
+   python3 seed-demo.py - it creates ready-made accounts and a course:
+      demo.student@example.com      / Kestrel-Bamboo-42    learner
+      demo.evaluator@example.com    / Evaluator-Bamboo-42  certificates only
+      demo.coordinator@example.com  / Coord-Bamboo-42      all five rights
+   Those are NOT used by the steps below.)
+
+ACCOUNTS YOU WILL CREATE IN PART 1
+  test.learner@example.com   / Learner-Bamboo-42    student
+  test.certonly@example.com  / CertOnly-Bamboo-42   evaluator, certificates only
+  test.coord@example.com     / Coord2-Bamboo-42     evaluator, all five rights
 
 
 PART 1 - ADMIN SETS EVERYTHING UP
