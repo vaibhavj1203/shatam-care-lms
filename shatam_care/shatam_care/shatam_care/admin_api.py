@@ -64,6 +64,11 @@ def create_course(title, short_introduction=None, description=None):
 	course.published = 0
 	course.append("instructors", {"instructor": frappe.session.user})
 	course.insert(ignore_permissions=True)
+
+	# Give the course an evaluator immediately, so it can certify learners from
+	# the moment it exists rather than silently stranding them until someone
+	# remembers to assign one.
+	add_course_evaluator(course.name, frappe.session.user)
 	return course.name
 
 
@@ -109,6 +114,7 @@ def get_course_admin_detail(course):
 		"instructors": instructor_details,
 		"evaluator": doc.evaluator,
 		"evaluator_user": evaluator_user,
+		"evaluators": _evaluator_list(doc),
 		"final_assessment": final_quiz,
 		"lesson_count": frappe.db.count("Course Lesson", {"course": course}),
 	}
@@ -130,6 +136,10 @@ def add_instructor(course, user):
 def remove_instructor(course, user):
 	check_capability("courses")
 	doc = frappe.get_doc("LMS Course", course)
+	if is_admin(user):
+		frappe.throw(
+			_("{0} is an administrator and always keeps access to every course.").format(user)
+		)
 	remaining = [row for row in doc.instructors if row.instructor != user]
 	if not remaining:
 		# LMS Course.instructors is mandatory — an empty list fails validation
@@ -140,23 +150,72 @@ def remove_instructor(course, user):
 	return doc.name
 
 
-@frappe.whitelist()
-def set_course_evaluator(course, user):
-	"""Assign the per-course evaluator who signs off certificates (PLAN.md 3.5).
+def _sync_primary_evaluator(doc):
+	"""Mirror the first evaluator into stock `LMS Course.evaluator`.
 
-	`LMS Course.evaluator` links to Course Evaluator (not User), so create that
-	record on demand — admins shouldn't have to know about the indirection.
+	`LMS Certificate Eligibility.evaluator` fetches from that single Link field,
+	so it has to stay populated even though a course can now have several.
+	"""
+	first = doc.shatam_evaluators[0].evaluator if doc.shatam_evaluators else None
+	if not first:
+		frappe.db.set_value("LMS Course", doc.name, "evaluator", None)
+		return
+	link = frappe.db.get_value("Course Evaluator", {"evaluator": first}, "name")
+	if not link:
+		link_doc = frappe.new_doc("Course Evaluator")
+		link_doc.evaluator = first
+		link_doc.insert(ignore_permissions=True)
+		link = link_doc.name
+	frappe.db.set_value("LMS Course", doc.name, "evaluator", link)
+
+
+@frappe.whitelist()
+def add_course_evaluator(course, user):
+	"""Add someone who may sign off this course's certificates.
+
+	Also grants the `certificates` capability: being named on a course but
+	unable to approve anything would make the assignment decorative.
 	"""
 	check_capability("courses")
-	evaluator = frappe.db.get_value("Course Evaluator", {"evaluator": user}, "name")
-	if not evaluator:
-		evaluator_doc = frappe.new_doc("Course Evaluator")
-		evaluator_doc.evaluator = user
-		evaluator_doc.insert(ignore_permissions=True)
-		evaluator = evaluator_doc.name
-	frappe.db.set_value("LMS Course", course, "evaluator", evaluator)
+	doc = frappe.get_doc("LMS Course", course)
+	if any(row.evaluator == user for row in doc.shatam_evaluators):
+		return _evaluator_list(doc)
+	doc.append("shatam_evaluators", {"evaluator": user})
+	doc.save(ignore_permissions=True)
+	_sync_primary_evaluator(doc)
+
 	_ensure_role(user, "Batch Evaluator")
-	return evaluator
+	if not is_admin(user):
+		caps = set(get_capabilities(user)) | {"certificates"}
+		set_capabilities(user, sorted(caps))
+	return _evaluator_list(doc)
+
+
+@frappe.whitelist()
+def remove_course_evaluator(course, user):
+	check_capability("courses")
+	if is_admin(user):
+		frappe.throw(
+			_("{0} is an administrator and always keeps access to every course.").format(user)
+		)
+	doc = frappe.get_doc("LMS Course", course)
+	doc.shatam_evaluators = [row for row in doc.shatam_evaluators if row.evaluator != user]
+	doc.save(ignore_permissions=True)
+	_sync_primary_evaluator(doc)
+	return _evaluator_list(doc)
+
+
+def _evaluator_list(doc):
+	users = [row.evaluator for row in doc.shatam_evaluators]
+	if not users:
+		return []
+	return frappe.get_all("User", filters={"name": ["in", users]}, fields=["name", "full_name"])
+
+
+@frappe.whitelist()
+def set_course_evaluator(course, user):
+	"""Back-compat single-evaluator setter — adds rather than replaces."""
+	return add_course_evaluator(course, user)
 
 
 # --- Final assessment --------------------------------------------------------

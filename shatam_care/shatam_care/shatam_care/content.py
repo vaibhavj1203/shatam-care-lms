@@ -42,11 +42,28 @@ def _check_can_author(course):
 
 
 def _check_can_view(course):
-	"""Enrolled learners, the course's instructors, and admins."""
+	"""Enrolled learners, the course's instructors, and admins. Raises otherwise."""
 	if _is_admin() or has_capability("content") or _is_course_instructor(course):
 		return
 	if not frappe.db.exists("LMS Enrollment", {"course": course, "member": frappe.session.user}):
 		frappe.throw(_("You must be enrolled in this course to view its content."), frappe.PermissionError)
+
+
+def _view_state(course):
+	"""Whether the caller may see this outline, and whether they're enrolled.
+
+	Returns True if enrolled (or staff). Returns False — rather than raising —
+	when the course is published and simply not joined yet, so the caller can
+	render a preview with an Enrol button. Unpublished courses stay hidden
+	from non-staff.
+	"""
+	if _is_admin() or has_capability("content") or _is_course_instructor(course):
+		return True
+	if frappe.db.exists("LMS Enrollment", {"course": course, "member": frappe.session.user}):
+		return True
+	if not frappe.db.get_value("LMS Course", course, "published"):
+		frappe.throw(_("This course is not available."), frappe.PermissionError)
+	return False
 
 
 # --- Authoring ----------------------------------------------------------------
@@ -145,12 +162,18 @@ def list_published_courses():
 
 @frappe.whitelist()
 def get_course_content(course):
-	"""Chapters + lessons for a course, flat, for an enrolled learner.
+	"""Chapters + lessons for a course, flat.
+
+	A learner who is not enrolled still gets the outline of a *published*
+	course, with `enrolled: False`, so the page can offer to enrol them.
+	Refusing outright meant clicking a course in the catalogue dead-ended on a
+	permission error with no way forward. Lesson playback remains gated —
+	`get_lesson_for_student` still requires enrolment.
 
 	Ordered by the reference tables (the authored order), falling back to
 	creation order for content that predates reference backfill.
 	"""
-	_check_can_view(course)
+	enrolled = _view_state(course)
 
 	chapter_rows = frappe.get_all(
 		"Chapter Reference",
@@ -202,6 +225,9 @@ def get_course_content(course):
 		"short_introduction": course_detail.short_introduction if course_detail else None,
 		"chapters": chapters,
 		"lessons": lessons,
+		# False = published course the caller hasn't joined; the page shows the
+		# outline plus an Enrol button rather than an error.
+		"enrolled": enrolled,
 	}
 
 

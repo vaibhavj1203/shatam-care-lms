@@ -112,7 +112,13 @@ export default function AdminPeoplePage() {
 			</div>
 
 			{tab === "accounts" ? (
-				<PeopleTable people={people} capabilityList={capabilityList} onChanged={reload} />
+				<PeopleTable
+						people={people}
+						capabilityList={capabilityList}
+						courses={courses}
+						groups={groups}
+						onChanged={reload}
+					/>
 			) : (
 				<EnrolmentsTable students={students} courses={courses} />
 			)}
@@ -326,16 +332,92 @@ function personaOf(person: Person) {
 	return "Student";
 }
 
+function EnrolPanel({
+	member,
+	courses,
+	groups,
+	onDone,
+}: {
+	member: string;
+	courses: AdminCourseRow[];
+	groups: StudentGroup[];
+	onDone: () => Promise<void>;
+}) {
+	const [course, setCourse] = useState("");
+	const [group, setGroup] = useState("");
+	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	async function handleEnrol() {
+		if (!course) return;
+		setSaving(true);
+		setError(null);
+		try {
+			await enrollStudent(course, member, group || undefined);
+			await onDone();
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Could not enrol this learner.");
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	return (
+		<div className="mt-2 border-t pt-3 space-y-2">
+			<p className="text-xs text-gray-600">Enrol {member} in a course.</p>
+			<div className="flex flex-wrap gap-2">
+				<select
+					value={course}
+					onChange={(e) => setCourse(e.target.value)}
+					className="flex-1 min-w-48 border border-gray-400 rounded px-3 py-2 text-sm"
+				>
+					<option value="">Choose a course…</option>
+					{courses.map((c) => (
+						<option key={c.name} value={c.name}>
+							{c.title}
+						</option>
+					))}
+				</select>
+				<select
+					value={group}
+					onChange={(e) => setGroup(e.target.value)}
+					className="border border-gray-400 rounded px-3 py-2 text-sm"
+				>
+					<option value="">Group (optional)</option>
+					{groups.map((g) => (
+						<option key={g.name} value={g.name}>
+							{g.title}
+						</option>
+					))}
+				</select>
+				<button
+					onClick={handleEnrol}
+					disabled={saving || !course}
+					className="bg-green-700 text-white rounded px-4 py-2 text-sm disabled:opacity-50"
+				>
+					{saving ? "Enrolling…" : "Enrol"}
+				</button>
+			</div>
+			{error && <p className="text-sm text-red-600">{error}</p>}
+		</div>
+	);
+}
+
 function PeopleTable({
 	people,
 	capabilityList,
+	courses,
+	groups,
 	onChanged,
 }: {
 	people: Person[];
 	capabilityList: CapabilityInfo[];
+	courses: AdminCourseRow[];
+	groups: StudentGroup[];
 	onChanged: () => Promise<void>;
 }) {
 	const [editing, setEditing] = useState<string | null>(null);
+	const [enrolling, setEnrolling] = useState<string | null>(null);
 
 	return (
 		<div className="bg-white rounded-lg border border-green-100 divide-y">
@@ -343,6 +425,7 @@ function PeopleTable({
 			{people.map((person) => {
 				const persona = personaOf(person);
 				const canDelegate = persona === "Evaluator";
+				const isStudent = persona === "Student";
 				return (
 					<div key={person.user} className="p-4 space-y-2">
 						<div className="flex items-center justify-between gap-3">
@@ -362,6 +445,16 @@ function PeopleTable({
 										{editing === person.user ? "Close" : "Edit rights"}
 									</button>
 								)}
+								{isStudent && (
+									<button
+										onClick={() =>
+											setEnrolling(enrolling === person.user ? null : person.user)
+										}
+										className="text-xs text-green-700 underline"
+									>
+										{enrolling === person.user ? "Close" : "Enrol in course"}
+									</button>
+								)}
 							</div>
 						</div>
 
@@ -375,6 +468,17 @@ function PeopleTable({
 							</p>
 						)}
 
+						{enrolling === person.user && (
+							<EnrolPanel
+								member={person.user}
+								courses={courses}
+								groups={groups}
+								onDone={async () => {
+									setEnrolling(null);
+									await onChanged();
+								}}
+							/>
+						)}
 						{editing === person.user && (
 							<CapabilityEditor
 								person={person}

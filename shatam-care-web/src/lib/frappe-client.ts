@@ -33,6 +33,49 @@ export function clearToken() {
 	localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
+/**
+ * Pull the human-readable sentence out of a Frappe error response.
+ *
+ * Frappe does not put it in `message`. It arrives either in `_server_messages`
+ * (a JSON string containing an array of JSON strings, each with its own
+ * `message`) or at the end of `exception` as "ExceptionType: the message".
+ * Without this the UI fell back to `response.statusText` and showed users
+ * "EXPECTATION FAILED" instead of "An account already exists for ...".
+ */
+function extractErrorMessage(body: Record<string, unknown>, fallback: string): string {
+	const serverMessages = body._server_messages;
+	if (typeof serverMessages === "string") {
+		try {
+			const parsed: unknown = JSON.parse(serverMessages);
+			if (Array.isArray(parsed) && parsed.length) {
+				const first = typeof parsed[0] === "string" ? JSON.parse(parsed[0]) : parsed[0];
+				const text = (first as { message?: string })?.message;
+				if (text) return stripHtml(text);
+			}
+		} catch {
+			// fall through to the other shapes
+		}
+	}
+
+	const exception = body.exception;
+	if (typeof exception === "string" && exception.includes(":")) {
+		return stripHtml(exception.slice(exception.indexOf(":") + 1).trim());
+	}
+
+	if (typeof body.message === "string" && body.message) return stripHtml(body.message);
+	return fallback;
+}
+
+// Frappe messages routinely contain markup (<b>, <div class="alert">, <ul>).
+function stripHtml(text: string): string {
+	return text
+		.replace(/<li>/gi, " • ")
+		.replace(/<[^>]*>/g, " ")
+		.replace(/&nbsp;/gi, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
 class FrappeApiError extends Error {
 	constructor(
 		message: string,
@@ -55,7 +98,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 	const response = await fetch(`${FRAPPE_URL}${path}`, { ...options, headers });
 	if (!response.ok) {
 		const body = await response.json().catch(() => ({}));
-		throw new FrappeApiError(body.message ?? response.statusText, response.status);
+		throw new FrappeApiError(extractErrorMessage(body, response.statusText), response.status);
 	}
 	const body = await response.json();
 	// Frappe wraps responses differently per endpoint family:

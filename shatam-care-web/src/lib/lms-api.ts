@@ -66,6 +66,9 @@ export function getCourseContent(
 	short_introduction?: string;
 	chapters: ChapterSummary[];
 	lessons: LessonSummary[];
+	/** False for a published course the learner hasn't joined — show a preview
+	 *  with an Enrol button rather than an error. */
+	enrolled: boolean;
 }> {
 	return callMethod("shatam_care.shatam_care.content.get_course_content", {
 		course: courseId,
@@ -518,6 +521,9 @@ export type CourseAdminDetail = {
 	instructors: { name: string; full_name: string }[];
 	evaluator?: string;
 	evaluator_user?: string;
+	/** Everyone who may sign off this course. Admins are always included and
+	 *  cannot be removed. */
+	evaluators: { name: string; full_name: string }[];
 	final_assessment?: { name: string; title: string };
 	lesson_count: number;
 };
@@ -538,6 +544,20 @@ export function removeInstructor(course: string, user: string) {
 		course,
 		user,
 	});
+}
+
+export function addCourseEvaluator(course: string, user: string) {
+	return callMethod<{ name: string; full_name: string }[]>(
+		"shatam_care.shatam_care.admin_api.add_course_evaluator",
+		{ course, user },
+	);
+}
+
+export function removeCourseEvaluator(course: string, user: string) {
+	return callMethod<{ name: string; full_name: string }[]>(
+		"shatam_care.shatam_care.admin_api.remove_course_evaluator",
+		{ course, user },
+	);
 }
 
 export function setCourseEvaluator(course: string, user: string) {

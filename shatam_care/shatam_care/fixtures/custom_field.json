@@ -139,5 +139,17 @@
   "module": "Shatam Care",
   "read_only": 1,
   "name": "User-shatam_capabilities"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "LMS Course",
+  "fieldname": "shatam_evaluators",
+  "fieldtype": "Table",
+  "label": "Certificate Evaluators",
+  "options": "LMS Course Evaluator",
+  "description": "Everyone who may sign off certificates for this course. Stock LMS Course.evaluator holds only one; the first entry here is mirrored into it so the eligibility record's fetch_from keeps working.",
+  "insert_after": "evaluator",
+  "module": "Shatam Care",
+  "name": "LMS Course-shatam_evaluators"
  }
 ]

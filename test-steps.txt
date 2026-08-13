@@ -98,8 +98,9 @@ PART 1 - ADMIN SETS EVERYTHING UP
     See: Lesson A pending. Click Approve. It disappears.
 17. Go to Courses, open Manual Test Course, click Publish.
     See: badge changes to Published.
-18. Go to People. Find Test Learner and enrol them in Manual Test Course.
-    (Or do it from the enrol option on the new-person form.)
+18. Go to People. On Test Learner's row click "Enrol in course",
+    pick Manual Test Course, click Enrol.
+    See: the enrolment appears under the Enrolments tab.
 
 
 PART 2 - EVALUATOR WITH ONE RIGHT
@@ -122,7 +123,10 @@ PART 3 - EVALUATOR WITH ALL RIGHTS
 PART 4 - STUDENT
 24. Sign out. Log in as test.learner@example.com / Learner-Bamboo-42
     See: ONLY "Courses" and "Certificates". No admin tabs at all.
-25. Click Courses, open Manual Test Course.
+24b. Click Courses and open a course you are NOT enrolled in.
+    See: the outline plus an "Enroll" button - NOT a permission error.
+         Lessons are listed but not clickable until you enrol.
+25. Open Manual Test Course (you were enrolled in step 18).
     See: the real course title as the heading, Module A with Lesson A,
          a Language dropdown, and a Final Assessment card saying pass mark 50%.
          (If it says 100%, that is a bug.)

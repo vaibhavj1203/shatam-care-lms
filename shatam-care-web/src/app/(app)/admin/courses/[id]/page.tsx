@@ -14,7 +14,8 @@ import {
 	removeAssessmentQuestion,
 	removeInstructor,
 	searchUsers,
-	setCourseEvaluator,
+	addCourseEvaluator,
+	removeCourseEvaluator,
 	updateCourseAdmin,
 } from "@/lib/lms-api";
 
@@ -204,27 +205,46 @@ function EvaluatorSection({
 	courseId: string;
 	onChange: () => Promise<void>;
 }) {
+	const evaluators = detail.evaluators ?? [];
 	return (
 		<section className="bg-white rounded-lg border border-green-100 p-4 space-y-3">
-			<h2 className="font-semibold text-green-800">Certificate Evaluator</h2>
-			{detail.evaluator_user ? (
-				<p className="text-sm">
-					Currently: <strong>{detail.evaluator_user}</strong>
-				</p>
-			) : (
+			<h2 className="font-semibold text-green-800">Certificate Evaluators</h2>
+			{evaluators.length === 0 && (
 				<p className="text-sm text-amber-700">
-					No evaluator assigned — certificates cannot be approved until one is set.
+					Nobody assigned yet — an admin can still approve, but naming someone makes
+					responsibility explicit.
 				</p>
 			)}
+			<ul className="space-y-1">
+				{evaluators.map((person) => (
+					<li key={person.name} className="flex items-center justify-between text-sm">
+						<span>
+							{person.full_name}{" "}
+							<span className="text-gray-500 text-xs">({person.name})</span>
+						</span>
+						<button
+							onClick={async () => {
+								await removeCourseEvaluator(courseId, person.name);
+								await onChange();
+							}}
+							className="text-red-600 text-xs underline"
+						>
+							Remove
+						</button>
+					</li>
+				))}
+			</ul>
 			<UserPicker
-				placeholder="Search a user to set as evaluator..."
+				placeholder="Search a user to add as evaluator..."
 				onSelect={async (user) => {
-					await setCourseEvaluator(courseId, user);
+					await addCourseEvaluator(courseId, user);
 					await onChange();
 				}}
 			/>
-			<p className="text-xs text-gray-500">
-				Also grants the Batch Evaluator role and creates the Course Evaluator record.
+			<p className="text-xs text-gray-600">
+				A course can have several evaluators. Adding someone grants them the
+				&ldquo;Approve certificates&rdquo; right. Administrators are always included and
+				cannot be removed.
 			</p>
 		</section>
 	);
