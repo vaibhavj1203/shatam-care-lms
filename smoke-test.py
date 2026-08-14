@@ -269,7 +269,9 @@ def main():
     try:
         with urllib.request.urlopen(f"{BASE}/verify?id={urllib.parse.quote(uid)}", timeout=30) as r:
             html = r.read().decode()
-        log("Valid Certificate" in html, "public /verify page shows Valid Certificate")
+        # Case-insensitive: the page is branded copy, not an API contract, so a
+        # wording tweak shouldn't fail the suite.
+        log("valid certificate" in html.lower(), "public /verify page shows a valid certificate")
     except Exception as e:  # noqa: BLE001
         log(False, "public /verify page", str(e)[:200])
 

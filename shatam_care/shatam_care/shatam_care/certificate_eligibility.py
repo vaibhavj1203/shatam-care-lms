@@ -95,10 +95,18 @@ def get_passing_final_assessment_submission(member, course):
 
 @frappe.whitelist()
 def approve_certificate(eligibility_name):
-	doc = frappe.get_doc("LMS Certificate Eligibility", eligibility_name)
+	"""Approve and issue, safely when several coordinators share the queue.
+
+	The queue is visible to everyone holding the "certificates" capability, so
+	two of them can click Approve on the same learner at the same moment.
+	Reading the row FOR UPDATE makes the second request wait for the first to
+	commit, after which it sees "Approved" and stops — without the lock, both
+	could pass the status check and issue two certificates for one learner.
+	"""
+	doc = frappe.get_doc("LMS Certificate Eligibility", eligibility_name, for_update=True)
 	_check_is_assigned_evaluator(doc)
 	if doc.status != "Eligible - Pending Approval":
-		frappe.throw(frappe._("Only records pending approval can be approved."))
+		frappe.throw(_already_reviewed_message(doc))
 
 	from shatam_care.shatam_care.certificate_issuance import issue_certificate
 
@@ -115,10 +123,10 @@ def approve_certificate(eligibility_name):
 
 @frappe.whitelist()
 def reject_certificate(eligibility_name, reason):
-	doc = frappe.get_doc("LMS Certificate Eligibility", eligibility_name)
+	doc = frappe.get_doc("LMS Certificate Eligibility", eligibility_name, for_update=True)
 	_check_is_assigned_evaluator(doc)
 	if doc.status != "Eligible - Pending Approval":
-		frappe.throw(frappe._("Only records pending approval can be rejected."))
+		frappe.throw(_already_reviewed_message(doc))
 
 	doc.status = "Rejected"
 	doc.reviewed_by = frappe.session.user
@@ -127,6 +135,25 @@ def reject_certificate(eligibility_name, reason):
 	doc.flags.ignore_permissions = True
 	doc.save(ignore_permissions=True)
 	return doc
+
+
+def _already_reviewed_message(doc):
+	"""Tell a coordinator who got there first, rather than a bare refusal.
+
+	With a shared queue this is the normal outcome of two people working the
+	same list, not an error the user did anything wrong to cause.
+	"""
+	who = frappe.db.get_value("User", doc.reviewed_by, "full_name") or doc.reviewed_by
+	when = frappe.utils.format_datetime(doc.reviewed_on) if doc.reviewed_on else ""
+	if doc.status == "Approved":
+		return frappe._("Already approved by {0}{1}. Refresh to update your queue.").format(
+			who or frappe._("someone else"), f" on {when}" if when else ""
+		)
+	if doc.status == "Rejected":
+		return frappe._("Already rejected by {0}{1}. Refresh to update your queue.").format(
+			who or frappe._("someone else"), f" on {when}" if when else ""
+		)
+	return frappe._("This learner is no longer awaiting approval. Refresh to update your queue.")
 
 
 def _check_is_assigned_evaluator(doc):
