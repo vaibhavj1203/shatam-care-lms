@@ -4,10 +4,9 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { ROLES } from "@/lib/roles";
 
 export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-	const { user, ready, logout, hasRole, can } = useAuth();
+	const { user, ready, logout, can, isLearner } = useAuth();
 	const router = useRouter();
 
 	useEffect(() => {
@@ -24,10 +23,12 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
 				</Link>
 				{/* Navigation follows capabilities, not roles. An evaluator holds
 				    whatever subset the admin delegated, so each link is gated on
-				    the specific right it needs. Learner links stay role-based —
-				    being a learner is not a delegated capability. */}
+				    the specific right it needs. Learner links are gated on
+				    isLearner rather than the LMS Student role, because Frappe's
+				    Administrator holds every role and would otherwise get a
+				    learner dashboard it has no use for. */}
 				<nav className="flex items-center gap-4 text-sm flex-wrap justify-end">
-					{hasRole(ROLES.STUDENT) && (
+					{isLearner && (
 						<>
 							<Link href="/courses">Courses</Link>
 							<Link href="/certificates">Certificates</Link>

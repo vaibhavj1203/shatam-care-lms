@@ -281,3 +281,32 @@ def my_certificates():
 		order_by="issue_date desc",
 	)
 	return rows
+
+
+@frappe.whitelist()
+def my_learner_state():
+	"""Whether to show the learner UI (My Courses / My Certificates).
+
+	The built-in `Administrator` account holds every role Frappe defines,
+	including `LMS Student`, so gating the learner nav on that role alone gave
+	it a learner dashboard it had no use for. Admins now see the learner UI
+	only once they genuinely have learner data — enrolling to preview a course
+	makes it appear, which is the only time it's useful to them.
+
+	Plain students always see it: a learner with no enrolments still needs the
+	catalogue to find their first course.
+	"""
+	from shatam_care.shatam_care.capabilities import is_admin
+
+	user = frappe.session.user
+	enrolments = frappe.db.count("LMS Enrollment", {"member": user})
+	certificates = frappe.db.count("LMS Certificate", {"member": user})
+	is_student = "LMS Student" in frappe.get_roles(user)
+
+	return {
+		"enrolments": enrolments,
+		"certificates": certificates,
+		"is_learner": bool(
+			is_student and (not is_admin(user) or enrolments or certificates)
+		),
+	}

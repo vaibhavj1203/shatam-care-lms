@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { ROLES } from "@/lib/roles";
 
 export default function DashboardPage() {
-	const { user, hasRole, can } = useAuth();
+	const { user, can, isLearner } = useAuth();
 	if (!user) return null;
 
 	return (
@@ -13,7 +12,7 @@ export default function DashboardPage() {
 			<h1 className="text-2xl font-semibold text-green-900">Welcome, {user.fullName}</h1>
 
 			<div className="grid gap-4 sm:grid-cols-2">
-				{hasRole(ROLES.STUDENT) && (
+				{isLearner && (
 					<>
 						<DashboardCard
 							href="/courses"

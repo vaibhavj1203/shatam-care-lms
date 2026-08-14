@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useSyncExternalStore, R
 import { useRouter } from "next/navigation";
 import { Capability, login as loginRequest } from "@/lib/frappe-client";
 import { getServerSnapshot, getSnapshot, subscribe, setToken, clearToken } from "@/lib/auth-store";
+import { getMyLearnerState } from "@/lib/lms-api";
 
 type AuthContextValue = {
 	user: ReturnType<typeof getSnapshot>;
@@ -19,6 +20,16 @@ type AuthContextValue = {
 	hasRole: (role: string) => boolean;
 	/** Capability check — this is what gates navigation and actions. */
 	can: (capability: Capability) => boolean;
+	/**
+	 * Whether to show the learner UI (Courses / Certificates).
+	 *
+	 * Deliberately not `hasRole("LMS Student")`: Frappe's built-in
+	 * Administrator holds every role, so that gave it a learner dashboard it
+	 * had no use for. The backend decides — students always qualify, admins
+	 * only once they actually have enrolments or certificates.
+	 * Null while still loading, so nav doesn't flicker.
+	 */
+	isLearner: boolean | null;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -37,6 +48,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setReady(true);
 	}, []);
+
+	// Fetched rather than baked into the token: an admin who enrols to preview
+	// a course should get the learner UI without signing out and back in.
+	// Stored against the user it was fetched for, then derived below. Resetting
+	// it synchronously on sign-out would both trip the cascading-render rule and
+	// briefly show the previous account's learner state after switching users.
+	const [learnerState, setLearnerState] = useState<{
+		forUser: string;
+		isLearner: boolean;
+	} | null>(null);
+
+	useEffect(() => {
+		if (!user) return;
+		let cancelled = false;
+		const forUser = user.user;
+		getMyLearnerState()
+			.then((state) => {
+				if (!cancelled) setLearnerState({ forUser, isLearner: state.is_learner });
+			})
+			.catch(() => {
+				if (!cancelled) setLearnerState({ forUser, isLearner: false });
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [user]);
+
+	// null until this user's own answer has arrived, so nav never flickers or
+	// shows a stale one.
+	const isLearner =
+		user && learnerState?.forUser === user.user ? learnerState.isLearner : null;
 
 	async function login(usr: string, pwd: string) {
 		const token = await loginRequest(usr, pwd);
@@ -57,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	}
 
 	return (
-		<AuthContext.Provider value={{ user, ready, login, logout, hasRole, can }}>
+		<AuthContext.Provider value={{ user, ready, login, logout, hasRole, can, isLearner }}>
 			{children}
 		</AuthContext.Provider>
 	);

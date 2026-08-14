@@ -163,6 +163,15 @@ export function getAuthorableCourses(): Promise<Course[]> {
 	return callMethod<Course[]>("shatam_care.shatam_care.content.courses_i_can_author");
 }
 
+export type LearnerState = { enrolments: number; certificates: number; is_learner: boolean };
+
+// Whether to show the learner UI. Not simply the LMS Student role: Frappe's
+// built-in Administrator holds every role, so that alone gave it a learner
+// dashboard it had no use for. See the backend docstring.
+export function getMyLearnerState(): Promise<LearnerState> {
+	return callMethod<LearnerState>("shatam_care.shatam_care.api.my_learner_state");
+}
+
 export function changeMyPassword(currentPassword: string, newPassword: string) {
 	return callMethod<{ user: string }>("shatam_care.shatam_care.auth.change_my_password", {
 		current_password: currentPassword,
