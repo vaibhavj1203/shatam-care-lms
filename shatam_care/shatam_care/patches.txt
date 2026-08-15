@@ -1,0 +1,5 @@
+[pre_model_sync]
+
+[post_model_sync]
+# Runs after doctypes/custom fields sync, so shatam_evaluators exists.
+shatam_care.patches.backfill_course_evaluators

@@ -63,12 +63,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		if (!user) return;
 		let cancelled = false;
 		const forUser = user.user;
+		const hasStudentRole = user.roles.includes("LMS Student");
 		getMyLearnerState()
 			.then((state) => {
 				if (!cancelled) setLearnerState({ forUser, isLearner: state.is_learner });
 			})
 			.catch(() => {
-				if (!cancelled) setLearnerState({ forUser, isLearner: false });
+				// Fail OPEN, to the role. This only decides whether to show the
+				// learner nav; defaulting to false on a transient error would
+				// strip Courses and Certificates from a student and leave them
+				// with nowhere to go. The worst case of failing open is that
+				// Administrator briefly sees learner links it doesn't need.
+				if (!cancelled) {
+					setLearnerState({ forUser, isLearner: hasStudentRole });
+				}
 			});
 		return () => {
 			cancelled = true;
