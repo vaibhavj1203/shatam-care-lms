@@ -17,6 +17,10 @@ type LessonDoc = {
 
 const PLAYER_ELEMENT_ID = "shatam-care-lesson-player";
 const POLL_INTERVAL_MS = 500;
+// How close to the end counts as "finished". YouTube often stops firing time
+// updates a beat before the true duration, and a learner who closes the tab on
+// the last second has genuinely watched the lesson.
+const END_TOLERANCE_SECONDS = 2;
 
 export default function LessonPlayerPage({
 	params,
@@ -35,10 +39,15 @@ export default function LessonPlayerPage({
 	const [answerResult, setAnswerResult] = useState<"correct" | "incorrect" | null>(null);
 	const [completed, setCompleted] = useState(false);
 	const [loadError, setLoadError] = useState<string | null>(null);
+	const [completeError, setCompleteError] = useState<string | null>(null);
 
 	const playerRef = useRef<YouTubePlayer | null>(null);
 	const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const handledCheckpointIds = useRef<Set<string>>(new Set());
+	// Guards against the poll and the ENDED event both firing a completion for
+	// the same lesson. A ref, not state, because both callers need to see the
+	// update immediately rather than on the next render.
+	const completingRef = useRef(false);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -56,7 +65,34 @@ export default function LessonPlayerPage({
 		};
 	}, [lessonId]);
 
-	const checkCheckpoints = useCallback(() => {
+	// Recording completion is what unlocks the certificate, so a silent failure
+	// here strands a learner who has genuinely finished the course: the
+	// eligibility gate needs a Complete progress row for every lesson, and
+	// nothing on screen would explain its absence. Hence the explicit error and
+	// retry rather than a bare await.
+	const completeLesson = useCallback(async () => {
+		if (!lesson || !user || completed || completingRef.current) return;
+		completingRef.current = true;
+		try {
+			await markLessonComplete(lesson.course, lesson.name);
+			setCompleted(true);
+			setCompleteError(null);
+		} catch {
+			completingRef.current = false;
+			setCompleteError(
+				"We couldn't record that you finished this lesson. Your certificate needs this, so please retry.",
+			);
+		}
+	}, [lesson, user, completed]);
+
+	// The player's onStateChange closure is created once per lesson, so it would
+	// otherwise capture the first completeLesson forever.
+	const completeLessonRef = useRef(completeLesson);
+	useEffect(() => {
+		completeLessonRef.current = completeLesson;
+	}, [completeLesson]);
+
+	const tick = useCallback(() => {
 		const player = playerRef.current;
 		if (!player || activeCheckpoint) return;
 		const currentTime = player.getCurrentTime();
@@ -66,14 +102,20 @@ export default function LessonPlayerPage({
 		if (next) {
 			player.pauseVideo();
 			setActiveCheckpoint(next);
+			return;
 		}
-	}, [pendingCheckpoints, activeCheckpoint]);
 
-	const handleLessonEnded = useCallback(async () => {
-		if (!lesson || !user || completed) return;
-		await markLessonComplete(lesson.course, lesson.name);
-		setCompleted(true);
-	}, [lesson, user, completed]);
+		// Completion is driven from the poll and not only from YouTube's ENDED
+		// event. ENDED proved unreliable in practice — it never arrives if the
+		// learner closes the tab on the final seconds, and it is missed
+		// entirely when the player is torn down on navigation. Learners who had
+		// watched everything and passed the assessment were left with zero
+		// lesson progress, so they never reached the approval queue.
+		const duration = player.getDuration();
+		if (duration > 0 && currentTime >= duration - END_TOLERANCE_SECONDS) {
+			completeLesson();
+		}
+	}, [pendingCheckpoints, activeCheckpoint, completeLesson]);
 
 	useEffect(() => {
 		if (!lesson) return;
@@ -85,11 +127,11 @@ export default function LessonPlayerPage({
 			playerRef.current = createPlayer(PLAYER_ELEMENT_ID, videoId, {
 				onStateChange: (event) => {
 					if (event.data === getPlayerState().ENDED) {
-						handleLessonEnded();
+						completeLessonRef.current();
 					}
 				},
 			});
-			pollRef.current = setInterval(checkCheckpoints, POLL_INTERVAL_MS);
+			pollRef.current = setInterval(tick, POLL_INTERVAL_MS);
 		});
 
 		return () => {
@@ -98,8 +140,9 @@ export default function LessonPlayerPage({
 			playerRef.current?.destroy();
 		};
 		// Intentionally only recreate the player when the lesson itself
-		// changes — checkCheckpoints/handleLessonEnded are kept fresh via the
-		// polling-refresh effect below instead of tearing down the player.
+		// changes — `tick` is kept fresh via the polling-refresh effect below,
+		// and completion via completeLessonRef, instead of tearing down the
+		// player.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [lesson]);
 
@@ -108,8 +151,8 @@ export default function LessonPlayerPage({
 	useEffect(() => {
 		if (!pollRef.current) return;
 		clearInterval(pollRef.current);
-		pollRef.current = setInterval(checkCheckpoints, POLL_INTERVAL_MS);
-	}, [checkCheckpoints]);
+		pollRef.current = setInterval(tick, POLL_INTERVAL_MS);
+	}, [tick]);
 
 	async function handleAnswerSubmit() {
 		if (!activeCheckpoint || selectedIndex === null) return;
@@ -201,6 +244,18 @@ export default function LessonPlayerPage({
 				<p className="text-green-700 text-sm font-medium">
 					Lesson marked complete. Great work!
 				</p>
+			)}
+
+			{!completed && completeError && (
+				<div className="rounded border border-red-200 bg-red-50 p-3 space-y-2">
+					<p className="text-red-700 text-sm">{completeError}</p>
+					<button
+						onClick={completeLesson}
+						className="bg-green-700 text-white rounded px-3 py-1.5 text-sm"
+					>
+						Retry
+					</button>
+				</div>
 			)}
 		</div>
 	);
