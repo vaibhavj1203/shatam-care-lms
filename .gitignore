@@ -19,6 +19,13 @@ next-env.d.ts
 .env.*
 !.env.*.example
 
+# Site backups. A Frappe dump contains the full User table — real email
+# addresses, password hashes and API key/secret pairs — so it must never be
+# committed, let alone pushed to a public repo.
+backups/
+*.sql.gz
+*.sql
+
 # Python
 __pycache__/
 *.py[cod]
