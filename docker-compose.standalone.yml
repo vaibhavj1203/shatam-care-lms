@@ -30,11 +30,19 @@ services:
     command:
       - -c
       - |
-        if [ -f /source/init.sh ]; then
+        # init+fetch rather than clone: the web service's nested volume mounts
+        # pre-create shatam-care-web/ inside this volume before we run, and
+        # `git clone` refuses a non-empty destination.
+        if [ -d /source/.git ]; then
           echo "Source already present - updating"
-          git -C /source pull --ff-only || echo "pull failed, keeping existing checkout"
+          git -C /source fetch --depth 1 origin "$${PROJECT_BRANCH}" \
+            && git -C /source reset --hard FETCH_HEAD \
+            || echo "update failed, keeping existing checkout"
         else
-          git clone --depth 1 --branch "$${PROJECT_BRANCH}" "$${PROJECT_REPO}" /source
+          git -C /source init -q
+          git -C /source remote add origin "$${PROJECT_REPO}"
+          git -C /source fetch --depth 1 origin "$${PROJECT_BRANCH}"
+          git -C /source checkout -f -B "$${PROJECT_BRANCH}" FETCH_HEAD
         fi
     environment:
       - PROJECT_REPO=${PROJECT_REPO:-https://github.com/vaibhavj1203/shatam-care-lms}
