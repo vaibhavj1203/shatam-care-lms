@@ -147,8 +147,15 @@ Python changes are picked up on reload in developer mode.
 
 ## Current state
 
-**The backend has never successfully executed against a live database.** It is
-written against the real stock schema and py-compiles, but expect genuine errors on
-first migrate — doctype JSON, fixture ordering, permission edge cases. `STATUS.md`
-tracks what's implemented, what's verified, and known gaps (no assessment-question
-translation UI, placeholder branding).
+The full flow — admin → teacher → student → evaluator → public certificate
+verification — runs end-to-end against a live backend, verified both by
+`smoke-test.py` (34 API checks) and manually in the browser, including the
+in-video checkpoint overlay pausing a real YouTube video. `STATUS.md` tracks
+what's implemented, what's verified, and known gaps (no self-service signup,
+no assessment-question translation UI, placeholder branding).
+
+Personas are Admin / Student / Evaluator, where an "evaluator" is any user the
+admin has delegated a subset of five capabilities (`courses`, `content`,
+`review`, `certificates`, `people`) — stored per-user in
+`User.shatam_capabilities`, enforced server-side in `capabilities.py`, mirrored
+in the frontend by `AuthContext.can()`.

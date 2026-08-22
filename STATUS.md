@@ -1,7 +1,18 @@
 # Shatam Care LMS — Implementation Status
 
-Last updated: 2026-08-05. Companion to [PLAN.md](PLAN.md) (design decisions) and
+Last updated: 2026-08-22. Companion to [PLAN.md](PLAN.md) (design decisions) and
 [SCHEMA.md](SCHEMA.md) (data model).
+
+> **2026-08 revisions** (after the persona rework, PLAN.md addendum): personas
+> are now Admin / Student / Evaluator with per-user delegable capabilities
+> (`capabilities.py`); courses support multiple teachers and evaluators
+> (`LMS Course Evaluator` child table); the approval queue is shared and
+> concurrency-safe; lesson completion is driven by the player's progress poll
+> (the ENDED event alone proved unreliable); `/account` self-service password
+> change exists; the public verify page is Shatam-branded. The checkpoint
+> overlay, previously the main unverified item, **has now been browser-verified**
+> against a real YouTube video, as have the assessment and both failure/retry
+> completion paths.
 
 ## Everything implemented
 
@@ -142,16 +153,15 @@ Ranked by what blocks a real pilot:
 
 ## Known gaps
 
-1. **⚠️ The bench is NOT on a volume.** Only the database is (`lms_mariadb-data`).
-   The entire bench — apps, venv, site config — lives in the container's writable
-   layer. **`docker compose down` destroys ~30 minutes of setup while leaving the
-   database behind**, which is worse than starting clean. Use
-   `docker compose restart frappe`; only run `down` if you also
-   `docker volume rm lms_mariadb-data` and intend a full rebuild. Adding a named
-   volume for `/home/frappe` is worth doing, but requires recreating the container.
-2. **Not yet exercised in the browser**: the in-video checkpoint overlay and the
-   teacher's video-scrubber both need a real YouTube video and manual playback;
-   the smoke test covers their APIs but not the player UI.
+1. ~~The bench is NOT on a volume~~ **Fixed 2026-08-22.** The bench now lives on
+   the named `bench` volume, `init.sh` is idempotent (guards every step, no
+   `new-site --force`), and `docker compose down`/`up` preserves both the bench
+   and the site. `down -v` remains the only destructive command, as it should be.
+2. ~~Checkpoint overlay not exercised in the browser~~ **Verified 2026-08-22**
+   against a real YouTube video: overlay fires and pauses at the timestamp,
+   records the answer, completion writes progress from the poll (proven with
+   ENDED suppressed), and the completion-failure path shows its retry UI. The
+   teacher's video-scrubber remains API-verified only.
 3. ~~wkhtmltopdf missing~~ **Not an issue.** The `frappe/bench` image ships
    wkhtmltopdf 0.12.6.1 (patched Qt) and certificate PDF download works. Earlier
    docs claimed otherwise — that caveat came from the *native macOS* attempt,
@@ -186,18 +196,15 @@ docker compose up          # first run takes 10-20+ min
 ```
 
 `init.sh` (run inside the container) creates the bench, fetches `payments`,
-the local `lms` fork and `shatam_care`, creates the `lms.localhost` site,
-installs all three apps, and enables developer mode.
+the `lms` fork and `shatam_care`, creates the `lms.localhost` site, installs
+all three apps, sets CORS for the frontend origin, runs migrations and enables
+developer mode. All steps are guarded, so re-running is safe and fast.
 
-Then, still needed after the site is up:
+The frontend is now a compose service too (`web`, port 3000). To develop it on
+the host instead, start only the backend services and run it yourself:
 
 ```bash
-# CORS — the Next.js frontend is a separate origin using token auth
-docker compose exec frappe bench --site lms.localhost set-config allow_cors http://localhost:3000
-```
-
-Frontend:
-```bash
+docker compose up mariadb redis frappe
 cd shatam-care-web && npm run dev
 ```
 

@@ -38,23 +38,49 @@ pullable.
 
 ## Quick start
 
-Requires Docker (with access to the folder you clone into) and Node 20+.
+Three ways to run it, most to least hands-off. All need only Docker.
+
+### 1. Just try it — no clone required
+
+Download [`docker-compose.standalone.yml`](docker-compose.standalone.yml)
+(one file) and run:
+
+```bash
+docker compose -f docker-compose.standalone.yml up -d   # first run: 15-25 min
+```
+
+A bootstrap container clones this repository into a Docker volume and the stack
+provisions itself. When it's done, the app is at http://localhost:3000 and the
+Frappe desk at http://localhost:8000.
+
+### 2. Develop on it — clone, everything in Docker
 
 ```bash
 git clone <this-repo> && cd <this-repo>
-
-docker compose up -d                      # first run: 15-25 min
+docker compose up -d                      # backend + frontend
 # wait for: curl http://localhost:8000/api/method/ping  -> {"message":"pong"}
-
-cd shatam-care-web
-cp .env.local.example .env.local
-npm install && npm run dev                # http://localhost:3000
 ```
 
-Verify the whole product works:
+Backend source is re-synced into the bench and migrated on every container
+start; the frontend hot-reloads through the bind mount.
+
+### 3. Frontend on the host — fastest edit loop for UI work
 
 ```bash
-python3 smoke-test.py http://localhost:8000     # expect 33/33
+docker compose up -d mariadb redis frappe   # backend only, leaves :3000 free
+
+cd shatam-care-web
+cp .env.local.example .env.local            # point it at http://localhost:8000
+npm install && npm run dev                  # http://localhost:3000
+```
+
+Requires Node 20+ on the host. This is the only mode with a host dependency
+beyond Docker.
+
+Verify the whole product works (any mode):
+
+```bash
+python3 smoke-test.py http://localhost:8000     # expect 34/34
 ```
 
 Default credentials are `Administrator` / `admin`. **These are development

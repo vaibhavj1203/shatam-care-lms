@@ -1,5 +1,20 @@
-version: "3.7"
+# Local development stack for the Shatam Care LMS.
+#
+#   docker compose up
+#
+# brings up everything needed to exercise the product end to end:
+#   - http://localhost:3000  the Shatam Care frontend (learners + admins)
+#   - http://localhost:8000  the Frappe backend and desk UI
+#
+# First run takes 10-20+ minutes (it clones frappe, lms and payments). Later
+# runs reuse the `bench` volume and start in well under a minute.
+#
+# !! DEVELOPMENT ONLY !!
+# The credentials below (MariaDB root "123", Administrator "admin") are fixed
+# and public in this repository. That is fine on a laptop and unacceptable on
+# anything reachable from a network. Do not deploy this file as-is.
 name: lms
+
 services:
   mariadb:
     image: mariadb:10.8
@@ -12,25 +27,85 @@ services:
       MYSQL_ROOT_PASSWORD: 123
     volumes:
       - mariadb-data:/var/lib/mysql
+    healthcheck:
+      # mysqladmin with explicit credentials, rather than the image's
+      # healthcheck.sh: on 10.8 that script authenticates as root with no
+      # password (and --su=mysql fails too, since this version has no socket
+      # auth for that user), so it stays "Access denied" forever and holds
+      # every dependent service down.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p123"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
 
   redis:
     image: redis:alpine
 
   frappe:
     image: frappe/bench:latest
-    command: bash /workspace/init.sh
+    # Docker creates a named volume's mount point root-owned when that path does
+    # not already exist in the image, and /home/frappe/frappe-bench does not.
+    # The container otherwise runs as `frappe`, so bench init fails with
+    # "PermissionError: '/home/frappe/frappe-bench/apps'". Start as root purely
+    # to fix ownership, then drop straight back to frappe for the real work.
+    user: root
+    # NOTE: `su frappe`, deliberately without a dash. A login shell (`su -`)
+    # resets PATH and loses pyenv, so python3 becomes the system 3.11 instead of
+    # the image's 3.14 — and frappe's develop branch fails to install with a
+    # bare "SyntaxError: invalid syntax" on modern type-alias syntax.
+    command: >
+      bash -c "chown -R frappe:frappe /home/frappe/frappe-bench &&
+               exec su frappe -c 'bash /workspace/init.sh'"
     environment:
       - SHELL=/bin/bash
       # Where init.sh fetches the lms app from. Defaults to the public fork;
       # set LMS_REPO=/workspace/shatam-care-lms in your shell to use a local
       # checkout instead (much faster on rebuilds).
       - LMS_REPO=${LMS_REPO:-}
+      - LMS_BRANCH=${LMS_BRANCH:-}
+      # Added to the site's allow_cors list. Only needs overriding if you
+      # publish the frontend on a port other than 3000.
+      - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-}
     working_dir: /home/frappe
     volumes:
       - .:/workspace
+      # The bench (apps, sites, and the site database's identity) lives on a
+      # named volume rather than in the container's writable layer. Without
+      # this, removing the container threw away the entire bench and forced a
+      # 20-minute reprovision on the next start.
+      - bench:/home/frappe/frappe-bench
     ports:
       - 8000:8000
       - 9000:9000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  web:
+    # The frontend is a separate origin talking to Frappe over token auth, so
+    # it is a plain Node container rather than anything Frappe-aware.
+    image: node:24-bookworm-slim
+    working_dir: /app
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --hostname 0.0.0.0 --port 3000"
+    environment:
+      # Read by the browser, not by this container, so it must be an address
+      # the *host* can reach — the compose service name would not resolve.
+      - NEXT_PUBLIC_FRAPPE_URL=http://localhost:8000
+    volumes:
+      - ./shatam-care-web:/app
+      # node_modules and .next are built for linux/arm64 inside the container
+      # and would otherwise be overwritten by (or clobber) the host's macOS
+      # build via the bind mount above. Keeping them in named volumes lets the
+      # host and container each have their own.
+      - web-node-modules:/app/node_modules
+      - web-next-cache:/app/.next
+    ports:
+      - 3000:3000
+    depends_on:
+      - frappe
 
 volumes:
   mariadb-data:
+  bench:
+  web-node-modules:
+  web-next-cache:
