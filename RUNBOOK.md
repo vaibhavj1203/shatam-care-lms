@@ -66,8 +66,8 @@ curl http://localhost:8000/api/method/ping     # -> {"message":"pong"}
 >
 > **Running natively instead removes this concern entirely** — the bench becomes
 > an ordinary directory on disk and `bench start` is just a process supervisor,
-> so stopping it loses nothing. See SYSTEM_CHANGES.md for why the native route
-> was nonetheless set aside here.
+> so stopping it loses nothing. The native route was nonetheless set aside
+> because it requires changing system-wide `python3` and `node` defaults.
 
 ## 2. Start the frontend
 

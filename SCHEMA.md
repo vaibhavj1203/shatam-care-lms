@@ -2,7 +2,7 @@
 
 Status: **design, being implemented now** into a new custom Frappe app
 (`shatam_care`, see [PLAN.md](PLAN.md) section 5/task tracking). This extends
-stock Frappe LMS's data model — see [PROJECT.md](PROJECT.md) for the baseline.
+stock Frappe LMS's data model — see [upstream Frappe Learning](https://github.com/frappe/lms) for the baseline.
 
 Convention: new DocTypes live in the `shatam_care` app so the upstream `lms`
 fork stays pullable. Where we need to add a field to an *existing* `lms`
@@ -95,7 +95,7 @@ answers for "User Input" type questions).
 
 ### `LMS Certificate Eligibility`
 Replaces the *purpose* of stock `LMS Certificate Request` (which is built
-around booking a live oral evaluation — see PROJECT.md/PLAN.md — a fundamental
+around booking a live oral evaluation — see PLAN.md — a fundamental
 mismatch). This is a new doctype rather than repurposing the old one, so we
 don't drag along live-call fields (`day`, `start_time`, `google_meet_link`,
 `timezone`) that mean nothing here.

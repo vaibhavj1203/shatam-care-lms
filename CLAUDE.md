@@ -115,8 +115,8 @@ hard refresh. This was a real bug caught by testing.
 ## Running it
 
 Docker is the chosen route. A native bench install was attempted and deliberately
-reverted — it required changing system-wide `python3` and `node` defaults. See
-`SYSTEM_CHANGES.md`.
+reverted — it required changing system-wide `python3` and `node` defaults, which
+would affect unrelated projects on the machine.
 
 ```bash
 cd frappe && docker compose up      # first run 10-20+ min

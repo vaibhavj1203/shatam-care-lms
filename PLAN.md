@@ -2,8 +2,9 @@
 
 Status: **plan, not yet implemented**. This consolidates everything locked in
 during the grill session (2026-07-29/30) into one reference document. See also
-[`PROJECT.md`](PROJECT.md) (stock Frappe LMS architecture/data model this is
-scoped against) and [`REMOVAL_CANDIDATES.md`](REMOVAL_CANDIDATES.md) (features
+[upstream Frappe Learning](https://github.com/frappe/lms) (the stock
+architecture/data model this is scoped against) and
+[`REMOVAL_CANDIDATES.md`](REMOVAL_CANDIDATES.md) (features
 marked for removal, not yet deleted).
 
 ## 1. What this is

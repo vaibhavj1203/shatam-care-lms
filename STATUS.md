@@ -181,8 +181,7 @@ Ranked by what blocks a real pilot:
 deliberately abandoned: it required changing system-wide `python3` (3.9 → 3.14)
 and `node` (v20 → v22) defaults, which affects unrelated projects on this
 machine, plus a permanently running MariaDB service. All of that was fully
-reverted — see [SYSTEM_CHANGES.md](SYSTEM_CHANGES.md). Docker keeps every one of
-those dependencies inside containers instead.
+reverted. Docker keeps every one of those dependencies inside containers instead.
 
 **One-time prerequisite:** grant Docker Desktop access to your Documents folder
 in System Settings → Privacy & Security → Files and Folders. Without it,

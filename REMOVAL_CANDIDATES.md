@@ -4,8 +4,9 @@ Status: **documentation only** — nothing below has been deleted from the codeb
 This is a reference list of what's redundant against the confirmed Shatam Care
 requirements, to be acted on once implementation actually starts.
 
-Decisions here come out of the grill session on 2026-07-29/30 (see conversation
-history / `PROJECT.md` for the base architecture this is scoped against).
+Decisions here are scoped against stock
+[Frappe Learning](https://github.com/frappe/lms), the base architecture this
+customization extends.
 
 ## Backend: DocTypes/apps to remove entirely
 
