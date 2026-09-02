@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "creation": "2026-07-30 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "checkpoint",
+  "member",
+  "column_break_1",
+  "lesson",
+  "course",
+  "section_break_1",
+  "selected_option",
+  "is_correct",
+  "attempted_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "checkpoint",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Checkpoint",
+   "options": "LMS Video Checkpoint",
+   "reqd": 1
+  },
+  {
+   "fieldname": "member",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Member",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "checkpoint.lesson",
+   "fieldname": "lesson",
+   "fieldtype": "Link",
+   "label": "Lesson",
+   "options": "Course Lesson",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "checkpoint.course",
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Course",
+   "options": "LMS Course",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "selected_option",
+   "fieldtype": "Data",
+   "label": "Selected Option"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_correct",
+   "fieldtype": "Check",
+   "label": "Is Correct"
+  },
+  {
+   "default": "Now",
+   "fieldname": "attempted_on",
+   "fieldtype": "Datetime",
+   "label": "Attempted On"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shatam Care",
+ "name": "LMS Video Checkpoint Attempt",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Moderator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "if_owner": 1,
+   "read": 1,
+   "role": "LMS Student",
+   "share": 1
+  }
+ ],
+ "sort_field": "attempted_on",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,126 @@
+# Shatam Care LMS — standalone stack. No repository clone required.
+#
+# Download JUST THIS FILE and run:
+#
+#   docker compose -f docker-compose.standalone.yml up
+#
+# then open:
+#   http://localhost:3000   the Shatam Care app  (Administrator / admin)
+#   http://localhost:8000   the Frappe desk
+#
+# First run takes 10-20+ minutes: a bootstrap container clones the project from
+# GitHub into a volume, then the normal provisioning (init.sh) runs from there.
+# Later runs skip both and start in under a minute.
+#
+# How it differs from docker-compose.yml (the developer file): the developer
+# file bind-mounts your working copy so local edits flow into the stack; this
+# file replaces that mount with a `source` volume populated by the bootstrap
+# service, so the only thing you need on disk is this file.
+#
+# !! DEVELOPMENT / EVALUATION ONLY !!
+# Fixed public credentials (MariaDB root "123", Administrator "admin"). Do not
+# expose this stack to a network.
+
+name: shatam-lms
+
+services:
+  bootstrap:
+    image: alpine/git:latest
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        # init+fetch rather than clone: the web service's nested volume mounts
+        # pre-create shatam-care-web/ inside this volume before we run, and
+        # `git clone` refuses a non-empty destination.
+        if [ -d /source/.git ]; then
+          echo "Source already present - updating"
+          git -C /source fetch --depth 1 origin "$${PROJECT_BRANCH}" \
+            && git -C /source reset --hard FETCH_HEAD \
+            || echo "update failed, keeping existing checkout"
+        else
+          git -C /source init -q
+          git -C /source remote add origin "$${PROJECT_REPO}"
+          git -C /source fetch --depth 1 origin "$${PROJECT_BRANCH}"
+          git -C /source checkout -f -B "$${PROJECT_BRANCH}" FETCH_HEAD
+        fi
+    environment:
+      - PROJECT_REPO=${PROJECT_REPO:-https://github.com/vaibhavj1203/shatam-care-lms}
+      - PROJECT_BRANCH=${PROJECT_BRANCH:-shatam-care-initial-commit}
+    volumes:
+      - source:/source
+
+  mariadb:
+    image: mariadb:10.8
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --skip-innodb-read-only-compressed
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      # Explicit credentials - the image's healthcheck.sh authenticates as
+      # root with no password on 10.8 and stays "Access denied" forever.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p123"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:alpine
+
+  frappe:
+    image: frappe/bench:latest
+    # Root only long enough to hand the volume to the frappe user; `su` without
+    # a dash on purpose - a login shell drops pyenv and picks up Python 3.11,
+    # which cannot install frappe's develop branch.
+    user: root
+    command: >
+      bash -c "chown -R frappe:frappe /home/frappe/frappe-bench &&
+               exec su frappe -c 'bash /workspace/init.sh'"
+    environment:
+      - SHELL=/bin/bash
+      - LMS_REPO=${LMS_REPO:-}
+      - LMS_BRANCH=${LMS_BRANCH:-}
+      - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-}
+    working_dir: /home/frappe
+    volumes:
+      - source:/workspace
+      - bench:/home/frappe/frappe-bench
+    ports:
+      - 8000:8000
+      - 9000:9000
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+
+  web:
+    image: node:24-bookworm-slim
+    working_dir: /repo/shatam-care-web
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --hostname 0.0.0.0 --port 3000"
+    environment:
+      # Read by the browser, not this container, so it must be host-reachable.
+      - NEXT_PUBLIC_FRAPPE_URL=http://localhost:8000
+    volumes:
+      - source:/repo
+      - web-node-modules:/repo/shatam-care-web/node_modules
+      - web-next-cache:/repo/shatam-care-web/.next
+    ports:
+      - 3000:3000
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      frappe:
+        condition: service_started
+
+volumes:
+  source:
+  mariadb-data:
+  bench:
+  web-node-modules:
+  web-next-cache:

@@ -1,0 +1,21 @@
+[project]
+name = "shatam_care"
+authors = [
+    { name = "Shatam Care Foundation" }
+]
+description = "Shatam Care Foundation LMS customizations on top of Frappe Learning"
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "AGPL-3.0-or-later" }
+dynamic = ["version"]
+dependencies = [
+    "qrcode~=7.4.2",
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.bench.frappe-dependencies]
+frappe = ">=14.0.0,<=17.0.0-dev"
+lms = ">=1.0.0"

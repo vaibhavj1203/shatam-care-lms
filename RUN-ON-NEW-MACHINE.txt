@@ -1,0 +1,231 @@
+====================================================================
+ SHATAM CARE LMS - RUN ON A BRAND-NEW MACHINE
+====================================================================
+
+Goal: from a machine that has ONLY Docker installed, get the whole
+application (backend + frontend) running and log in.
+
+You do NOT clone the repository. You download ONE file and start it.
+Everything else - the code, the database, the frontend - is fetched
+and built inside Docker.
+
+Time: 15-25 minutes on the first run (it downloads and builds a lot).
+Later starts take under a minute.
+
+Works on macOS, Windows, or Linux. Commands are the same on all three;
+where a step differs, it says so.
+
+
+--------------------------------------------------------------------
+ STEP 0 - CHECK DOCKER IS READY
+--------------------------------------------------------------------
+
+Open a terminal and run:
+
+    docker --version
+    docker compose version
+
+Both must print a version number.
+
+  - If "docker" is not found: Docker isn't installed or (on
+    Mac/Windows) Docker Desktop isn't running. Start Docker Desktop
+    and wait for its whale icon to go steady, then retry.
+
+  - If "docker compose version" errors but "docker --version" works:
+    you have an old Docker. On Linux install the compose plugin:
+        sudo apt-get update && sudo apt-get install docker-compose-plugin
+    On Mac/Windows, update Docker Desktop.
+
+  (Note the space: it's "docker compose", not "docker-compose".)
+
+
+--------------------------------------------------------------------
+ STEP 1 - MAKE A FOLDER AND ENTER IT
+--------------------------------------------------------------------
+
+    mkdir shatam-lms
+    cd shatam-lms
+
+This folder only ever holds the one compose file. Everything else
+lives inside Docker.
+
+
+--------------------------------------------------------------------
+ STEP 2 - DOWNLOAD THE ONE FILE
+--------------------------------------------------------------------
+
+macOS / Linux:
+
+    curl -LO https://raw.githubusercontent.com/vaibhavj1203/shatam-care-lms/shatam-care-initial-commit/docker-compose.standalone.yml
+
+Windows (PowerShell):
+
+    curl.exe -LO https://raw.githubusercontent.com/vaibhavj1203/shatam-care-lms/shatam-care-initial-commit/docker-compose.standalone.yml
+
+Confirm it arrived (should list the file):
+
+    dir            (Windows)
+    ls             (macOS / Linux)
+
+If you cannot use the command line, just open the URL above in a
+browser and "Save As" docker-compose.standalone.yml into this folder.
+
+
+--------------------------------------------------------------------
+ STEP 3 - START EVERYTHING
+--------------------------------------------------------------------
+
+    docker compose -f docker-compose.standalone.yml up -d
+
+The "-d" runs it in the background.
+
+The very first run pulls several images and builds the site. This is
+the 15-25 minute wait. It is normal for it to sit quietly - it is
+downloading, not stuck.
+
+
+--------------------------------------------------------------------
+ STEP 4 - WATCH IT COME UP (OPTIONAL BUT REASSURING)
+--------------------------------------------------------------------
+
+Follow the backend's progress:
+
+    docker compose -f docker-compose.standalone.yml logs -f frappe
+
+You'll see it clone the code, create the site, and install the apps.
+When it prints lines like "Building assets" and then a steady stream
+ending in the server starting, it's nearly ready.
+
+Press Ctrl+C to stop watching the logs (this does NOT stop the app).
+
+
+--------------------------------------------------------------------
+ STEP 5 - CHECK IT'S ALIVE
+--------------------------------------------------------------------
+
+Backend (should print {"message":"pong"}):
+
+    curl http://localhost:8000/api/method/ping
+
+If it prints pong, the backend is up. The frontend takes an extra
+minute after that to finish its first build.
+
+
+--------------------------------------------------------------------
+ STEP 6 - OPEN THE APP
+--------------------------------------------------------------------
+
+In a browser on this machine:
+
+    http://localhost:3000
+
+Log in with the built-in administrator account:
+
+    Username:  Administrator
+    Password:  admin
+
+If the page doesn't load yet, wait ~60 seconds and refresh - the
+frontend is still building on the first run.
+
+There is also the Frappe admin desk (the raw backend), if you want it:
+
+    http://localhost:8000       (same Administrator / admin login)
+
+
+--------------------------------------------------------------------
+ STEP 7 - TRY THE WHOLE FLOW (as the admin)
+--------------------------------------------------------------------
+
+Everything can be driven from the admin account at http://localhost:3000:
+
+  1. Create a course, add a chapter and a lesson with a YouTube URL.
+  2. On the lesson, place an in-video checkpoint (a question that pops
+     up at a chosen timestamp).
+  3. Build the course's final assessment and add a question.
+  4. Publish the course.
+  5. Under "People", create a student account and enrol them.
+  6. Sign out, sign in as that student, watch the lesson (answer the
+     checkpoint when it pauses the video), take the assessment.
+  7. Sign back in as the admin, open "Certificate Approvals", approve.
+  8. Back as the student, download the certificate from "Certificates".
+  9. Scan the QR / open the verify link - it resolves on a public page
+     that needs no login.
+
+
+====================================================================
+ EVERYDAY COMMANDS (run from inside the shatam-lms folder)
+====================================================================
+
+Stop the app (keeps all data):
+
+    docker compose -f docker-compose.standalone.yml stop
+
+Start it again later (fast - no rebuild):
+
+    docker compose -f docker-compose.standalone.yml start
+
+See what's running:
+
+    docker compose -f docker-compose.standalone.yml ps
+
+Read the logs:
+
+    docker compose -f docker-compose.standalone.yml logs -f frappe
+    docker compose -f docker-compose.standalone.yml logs -f web
+
+
+====================================================================
+ DELETING EVERYTHING
+====================================================================
+
+Remove the containers but KEEP your data (courses, users, certs):
+
+    docker compose -f docker-compose.standalone.yml down
+
+Remove the containers AND wipe all data back to a clean slate:
+
+    docker compose -f docker-compose.standalone.yml down -v
+
+  ^ The "-v" is the difference. Without it, your data survives and the
+    next "up" reuses it. With it, everything is erased and the next
+    "up" reprovisions from scratch (another 15-25 min).
+
+
+====================================================================
+ IF SOMETHING GOES WRONG
+====================================================================
+
+"port is already allocated" (3000, 8000 or 9000)
+    Something else on this machine is using that port. Either stop
+    that other program, or edit the "ports:" lines in the compose
+    file (e.g. change "3000:3000" to "3001:3000") and, if you change
+    the app's port, also change NEXT_PUBLIC_FRAPPE_URL to match the
+    backend port. Then "up" again.
+
+The app at :3000 shows an error or won't load
+    The frontend finishes ~1 minute after the backend. Wait and
+    refresh. Still failing? Check its logs:
+        docker compose -f docker-compose.standalone.yml logs web
+
+"pong" never appears at :8000 after 30+ minutes
+    Watch the backend log for a red error:
+        docker compose -f docker-compose.standalone.yml logs frappe
+    The most common cause on a fresh machine is simply not enough
+    time or memory - give Docker Desktop at least 4 GB RAM
+    (Settings -> Resources) and try "down -v" then "up" again.
+
+Everything is broken and you just want a clean restart
+    docker compose -f docker-compose.standalone.yml down -v
+    docker compose -f docker-compose.standalone.yml up -d
+
+
+====================================================================
+ IMPORTANT - THIS IS A DEMO / EVALUATION SETUP
+====================================================================
+
+The passwords in this file are fixed and public (Administrator/admin,
+database root/123). That is fine for trying the app on your own
+machine. Do NOT put this on the public internet as-is - anyone would
+have the admin password. Hardening it for real use (real passwords,
+HTTPS, backups) is a separate exercise.
+====================================================================
