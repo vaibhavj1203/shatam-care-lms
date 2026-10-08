@@ -35,6 +35,7 @@ ACCOUNTS YOU WILL CREATE IN PART 1
   test.learner@example.com   / Learner-Bamboo-42    student
   test.certonly@example.com  / CertOnly-Bamboo-42   evaluator, certificates only
   test.coord@example.com     / Coord2-Bamboo-42     evaluator, all five rights
+  test.reject@example.com    / Reject-Bamboo-42     student (only for Part 6, optional)
 
 
 PART 1 - ADMIN SETS EVERYTHING UP
@@ -66,6 +67,10 @@ PART 1 - ADMIN SETS EVERYTHING UP
     See: checkboxes reflecting only "Approve certificates".
     Tick "Review content" as well, save, then untick it again and save.
     See: the row updates both times. (This is the "editable later" behaviour.)
+6c. Click Groups. In "Student Groups", enter a title
+    (e.g. "Nashik — Coordinator Priya") and a region, click Add.
+    See: the group appears in the list. These are internal reporting tags only;
+         confirm later (step 24) that a student never sees them.
 7.  Click Courses (the admin one). Click "+ New course".
     Title: Manual Test Course.  Leave the introduction BLANK.
     See: it creates successfully. (A title-only course must work.)
@@ -73,6 +78,12 @@ PART 1 - ADMIN SETS EVERYTHING UP
     Then add a question: "Which is safe?" with options "Bend knees" (tick as
     correct) and "Bend back". Add question.
     See: the question appears in the list.
+8b. Still on the course page, find the "Certificate Evaluators" section. In
+    "Search a user to add as evaluator...", add Full Coordinator (test.coord).
+    See: a course can hold SEVERAL evaluators - both approvers now cover it.
+    Then in "Teachers" -> "Search a user to add as teacher...", add Full
+    Coordinator too.
+    See: multiple teachers per course; adding one grants the Course Creator role.
 9.  Click Content in the top bar. Open Manual Test Course.
     Click "+ Add lesson". Chapter: Module A. Title: Lesson A.
     YouTube: dQw4w9WgXcQ. Create.
@@ -92,8 +103,20 @@ PART 1 - ADMIN SETS EVERYTHING UP
     Then click Delete on it.
     See: it updates, then disappears (nobody has answered it yet).
 14. Add the checkpoint again (as in steps 10-11) so the learner has one.
+14b. On that checkpoint, find "Translations". Choose a language (Hindi) from
+    "Select a language...", type a translated question and translated options -
+    keep the CORRECT option FIRST, same order as the original - and click
+    "Save translation".
+    See: the translation appears in the Translations list. (A learner will see
+         it at step 26 when their language is set to Hindi.)
 15. Click "Submit for review".
     See: status becomes Submitted for Review.
+15b. Click Review in the top bar. On Lesson A click REJECT (not Approve).
+    See: it leaves the review queue and the lesson returns to the teacher marked
+         Rejected - editable again, not stuck. Open Lesson A and click
+         "Submit for review" once more.
+    See: status is Submitted for Review again. (That exercised the reject path;
+         now the approve path.)
 16. Click Review in the top bar.
     See: Lesson A pending. Click Approve. It disappears.
 17. Go to Courses, open Manual Test Course, click Publish.
@@ -123,6 +146,7 @@ PART 3 - EVALUATOR WITH ALL RIGHTS
 PART 4 - STUDENT
 24. Sign out. Log in as test.learner@example.com / Learner-Bamboo-42
     See: ONLY "Courses" and "Certificates". No admin tabs at all.
+         No Groups tab - the group from step 6c is invisible to learners.
 24b. Click Courses and open a course you are NOT enrolled in.
     See: the outline plus an "Enroll" button - NOT a permission error.
          Lessons are listed but not clickable until you enrol.
@@ -130,11 +154,17 @@ PART 4 - STUDENT
     See: the real course title as the heading, Module A with Lesson A,
          a Language dropdown, and a Final Assessment card saying pass mark 50%.
          (If it says 100%, that is a bug.)
+25b. Set the Language dropdown to Hindi.
+    See: "Saved". (This selects the translation you authored in step 14b.)
 26. Open Lesson A. Let the video reach your checkpoint's timestamp.
     <-- MOST IMPORTANT STEP
-    See: the video PAUSES and the question appears over it.
-27. Choose "Knees", click Submit answer.
-    See: "Correct!"
+    See: the video PAUSES and the question appears over it - and because your
+         language is Hindi, the question and options show in HINDI (the step-14b
+         translation), not English.
+27. Choose the FIRST option (the "knees" answer), click Submit answer.
+    See: "Correct!" Answers are matched by position, so the first option is the
+         right one in any language - that is why they are stored by index, not
+         text.
 28. Click Continue watching.
     See: the overlay closes and the video RESUMES.
 29. Reload the page and play from the start again.
@@ -154,11 +184,20 @@ PART 4 - STUDENT
          must be refused; correct one must work. Sign out and back in with
          the new password to confirm.
 
-PART 5 - APPROVAL AND CERTIFICATE
-35. Sign out. Log in as test.certonly@example.com again. Click Approvals.
-    See: Test Learner listed as pending.
-36. Click "Approve & issue certificate".
-    See: the row disappears.
+PART 5 - APPROVAL AND THE SHARED QUEUE
+35. Sign out. Log in as test.coord@example.com / Coord2-Bamboo-42 (all five
+    rights). Click Approvals.
+    See: Test Learner listed as pending. Leave this window open.
+35b. In a SECOND window, log in as test.certonly@example.com / CertOnly-Bamboo-42.
+    Click Approvals.
+    See: the SAME Test Learner pending here too - the queue is shared across
+         everyone who can approve, not split up per person.
+36. As test.certonly, click "Approve & issue certificate".
+    See: the row disappears here.
+36b. Return to the test.coord window and refresh Approvals.
+    See: Test Learner is GONE from this queue as well - once one coordinator
+         approves, it clears from every other coordinator's queue automatically
+         (no double-issue, no two people working the same learner).
 37. Sign out. Log in as test.learner@example.com. Click Certificates.
     See: a certificate with an ID like SCF-2026-000014.
 38. Click "Verification page".
@@ -167,6 +206,24 @@ PART 5 - APPROVAL AND CERTIFICATE
     See: still shows "Valid Certificate".
 40. Click "Download PDF".
     See: a certificate PDF downloads and opens.
+
+
+PART 6 - REJECTION PATH (certificate)   optional; uses a throwaway learner
+   Certificate rejection is final for that attempt, so it needs its own learner
+   rather than the one from Part 4.
+41. As Administrator (or test.coord): create a STUDENT
+    test.reject@example.com / Reject-Bamboo-42, and enrol them in
+    Manual Test Course (People -> Enrol in course).
+42. Log in as test.reject. Short version of Part 4: open Lesson A, answer the
+    checkpoint, let the video finish, go back, Take assessment, pass it.
+    See: the course page says the certificate is awaiting approval.
+43. Log in as test.certonly -> Approvals. Find test.reject, type a reason in
+    "Reason for rejection (optional)" (e.g. "Please retake Module A"), then
+    click Reject.
+    See: the row disappears from the queue.
+44. Log back in as test.reject -> course page / Certificates.
+    See: no certificate is issued, and the rejection reason is shown. Rejection
+         is final for this attempt - the learner cannot self-advance past it.
 
 
 IF SOMETHING FAILS
