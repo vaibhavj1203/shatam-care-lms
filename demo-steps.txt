@@ -1,157 +1,237 @@
-SHATAM CARE LMS - GUIDED DEMO
-A 15-minute walkthrough that SHOWS the product working. Everything is already
-set up for you by the seeder, so you start by using the app, not building it.
+SHATAM CARE LMS - GUIDED DEMO (build it live, from scratch)
+A ~20-minute walkthrough that shows someone how to USE the app by setting up a
+real training scenario from an empty system and running a learner all the way to
+a verified certificate. Teaching how to use it and showing the full feature set
+are the same walk - so this one script does both.
 
-(If you want to test every feature and edge case instead of demoing, use
- test-steps.txt - that is the thorough QA script. This file is for showing
- someone what the product does.)
-
-
-SET UP ONCE (about 15 min the first time, under a minute after)
-  cd frappe
-  docker compose up -d
-  cd shatam-care-web && npm run dev
-
-  Then load the demo scenario - run this from the frappe folder (it talks to
-  the backend on :8000, so the stack above must be up first):
-  python3 seed-demo.py
-
-  This creates a ready-to-show training course, a learner already enrolled in
-  it, and the staff accounts below. Everything is at http://localhost:3000.
-  Safe to re-run - it reuses existing accounts and resets their passwords.
-
-  THE LOGINS
-    Administrator               / admin                  (runs everything)
-    demo.student@example.com    / Kestrel-Bamboo-42       (a caregiver learning)
-    demo.evaluator@example.com  / Evaluator-Bamboo-42     (approves certificates only)
-    demo.coordinator@example.com/ Coord-Bamboo-42         (a full coordinator)
-
-  Sign out between roles, or use a separate private window per role so you can
-  flip between them without logging in and out.
+   Prefer a 2-minute look without building anything? Run  python3 seed-demo.py
+   from the frappe folder - it creates a ready course + accounts - then skip to
+   ACT 4 and log in as demo.student@example.com / Kestrel-Bamboo-42.
 
 
-====================================================================
- ACT 1 - WHAT A CAREGIVER EXPERIENCES   (log in as demo.student)
-====================================================================
-The learner is a caregiver in a tier-3 town, often on a phone, learning from
-video. The product's job is to make sure they actually watched and understood -
-not just left the video playing.
+THE STORY YOU'RE TELLING
+   "A new batch of caregivers needs training. Watch me stand up a coordinator,
+    a certificate approver, a course, and a learner - and take that learner
+    from enrolment to a certificate an employer can verify online."
 
-1.  Log in as demo.student@example.com / Kestrel-Bamboo-42.
-    You land on a simple dashboard: My Courses, My Certificates. Nothing else -
-    a learner is never shown admin machinery.
+ONE NOTE BEFORE YOU START (so nobody is surprised)
+   Students do NOT sign themselves up. A coordinator creates each caregiver's
+   account and enrols them. That is by design today; self-signup is roadmap.
+   If asked "how does a caregiver join?", that's the honest answer.
 
-2.  Open "My Courses" -> "Demo: Safe Patient Handling" -> open the lesson
-    "Lifting a patient safely". The video starts playing.
+SET UP (the backend is usually already running)
+   cd frappe && docker compose up -d
+   cd shatam-care-web && npm run dev
+   Everything is at http://localhost:3000. The ONLY login you need to begin:
+       Administrator / admin
+   Sign out between roles, or keep one role per private window so you can flip.
 
-3.  >>> THE SIGNATURE FEATURE <<<
-    About 5 seconds in, the video STOPS on its own and a question appears on
-    top of it: "When lifting a patient, what should you bend?"
-    The learner cannot skip ahead or carry on until they answer. This is how
-    the platform evidences real viewing in place of a classroom register.
-
-4.  Choose "Your knees" and Submit. It confirms "Correct!", you click
-    Continue watching, and the video resumes exactly where it paused.
-
-5.  Show that it respects the learner's time: reload the page and play again.
-    The question does NOT interrupt a second time - checkpoints only enforce on
-    the first watch, so revising a lesson later is never punished.
-
-6.  Let the video run to the end. It marks the lesson complete on its own.
-
-7.  Back on the course, click "Take assessment". Answer the final question
-    (the back is the body part safe lifting protects), submit.
-    It says you passed - and that your certificate is now AWAITING APPROVAL.
-    Note what just happened: finishing the videos is not enough. A human still
-    has to sign off before a government-recognised certificate is issued.
+PEOPLE YOU'LL CREATE LIVE (pick any passwords; these are just examples)
+   priya@example.com  / Coord-Demo-42    a full coordinator  (all five rights)
+   ravi@example.com   / Appr-Demo-42     a certificate approver (one right)
+   asha@example.com   / Learn-Demo-42    a caregiver (the learner)
 
 
 ====================================================================
- ACT 2 - MANY LANGUAGES, ONE VIDEO   (show the multilingual angle)
+ ACT 1 - SET UP YOUR TEAM AND THEIR PERMISSIONS   (as Administrator)
 ====================================================================
-Shatam trains across Hindi, Marathi and more. The platform translates the
-on-screen quiz text per language without duplicating the course.
+The point to land: "Evaluator" is not one fixed job. An admin hands each staff
+member exactly the rights they need - nothing more.
 
-8.  In a second window, log in as demo.coordinator@example.com / Coord-Bamboo-42.
-    Click Content -> open "Lifting a patient safely" -> find the checkpoint ->
-    under "Translations" choose a language (e.g. Hindi), type the translated
-    question and options, and click "Save translation".
+1.  Log in as Administrator / admin. The dashboard shows every tool: Courses,
+    Content, People, Groups, Review, Approvals.
 
-9.  Back as demo.student, open the course page and change the Language dropdown
-    to Hindi. Re-open the lesson and reach the checkpoint.
-    The question now appears in Hindi - same video, same lesson, learner's own
-    language. (The video's own audio is handled by YouTube's dubbed tracks.)
-
-
-====================================================================
- ACT 3 - THE HUMAN SIGN-OFF & A VERIFIABLE CERTIFICATE
-====================================================================
-10. Log in as demo.evaluator@example.com / Evaluator-Bamboo-42.
-    Notice the top bar shows ONLY "Approvals" - nothing else. This person was
-    trusted with exactly one job and the interface reflects precisely that.
-
-11. Click Approvals. The demo student is listed as eligible and pending.
-    Click "Approve & issue certificate". Done - that is the final gate.
-
-12. Log back in as demo.student -> Certificates.
-    There is now a certificate with an ID like SCF-2026-000001.
-
-13. >>> VERIFIABLE BY ANYONE <<<
-    Click "Verification page". It shows "Valid Certificate" with the learner's
-    name, course and date. Now copy that URL into a private/logged-out window -
-    it STILL resolves. An employer can confirm a caregiver's credential with no
-    account and no login. Each certificate also carries a QR code to the same
-    page.
-
-14. Click "Download PDF" to show the printable certificate itself.
-
-
-====================================================================
- ACT 4 - HOW AN ADMIN RUNS IT   (log in as Administrator)
-====================================================================
-This is the "and it is built for how you actually operate" close.
-
-15. Log in as Administrator / admin. The dashboard shows the full set of tools:
-    Courses, Content, People, Groups, Review, Approvals.
-
-16. Click People. Every account carries a persona badge, and for evaluators you
-    can see exactly which of the five rights they hold:
+2.  Click People. This is the roster. Every account carries a persona badge, and
+    evaluators show which of the five rights they hold:
         Manage courses | Author content | Review content
         Approve certificates | Manage people
-    Click "Edit rights" on someone to show rights are granted and revoked per
-    person - "Evaluator" is whatever you delegate, nothing more. That is why
-    demo.evaluator saw only Approvals a moment ago.
 
-17. Open any course. Show that a course can carry MULTIPLE teachers and MULTIPLE
-    certificate evaluators (the "Teachers" and "Certificate Evaluators"
-    sections) - so approvals are shared across a team of coordinators and a
-    course is never stuck waiting on one person.
+3.  Click "+ New person" -> persona EVALUATOR.
+    Name: Priya Coordinator.  Email: priya@example.com.  Password: Coord-Demo-42.
+    Tick ALL FIVE rights. Create.
+    Say: "Priya helps me run everything - so she gets the full set."
 
-18. Click Groups. Student Groups are internal tags - by region or field
-    coordinator (e.g. "Nashik - Coordinator Priya") - for reporting. Learners
-    never see them.
+4.  Click "+ New person" -> persona EVALUATOR.
+    Name: Ravi Approver.  Email: ravi@example.com.  Password: Appr-Demo-42.
+    Tick ONLY "Approve certificates". Create.
+    Say: "Ravi only signs off certificates. That's the only tab he'll ever see -
+          I'll prove that in a minute."
 
-19. (Optional) Click Content to show the authoring side: the interactive video
-    scrubber where a teacher places those pause-to-answer checkpoints on the
-    timeline, and submits a lesson for admin review before it goes live.
+5.  Click "+ New person" -> persona STUDENT.
+    Name: Asha Caregiver.  Email: asha@example.com.  Password: Learn-Demo-42.
+    Create - a one-time password is shown; note it.
+    Say: "This is how a caregiver 'signs up' - a coordinator creates them."
+
+6.  On Ravi's row, click "Edit rights". Tick "Review content", save, then untick
+    it and save again.
+    Say: "Rights are editable any time - I can widen or narrow what someone does
+          without recreating their account."
+
+7.  Click Groups. Add a Student Group - title "Nashik — Coordinator Priya" and a
+    region.
+    Say: "Internal tags for reporting by region or field coordinator. Learners
+          never see these."
 
 
 ====================================================================
- THE ONE-LINE PITCH, IF YOU NEED IT
+ ACT 2 - BUILD A COURSE   (as Administrator)
 ====================================================================
-Curated video training for caregivers, where the platform proves they watched
-and understood (pause-to-answer checkpoints), tests them, has a human approve
-them, and issues a certificate anyone can verify online - in the learner's own
-language, run by a small team with finely delegated permissions.
+8.  Click Courses -> "+ New course". Title: "Safe Patient Handling". Create.
+    (An introduction is optional - a title alone is enough to start.)
+
+9.  Open the course. Under Final Assessment, set pass mark 50 and Create. Add a
+    question: "Safe lifting mainly protects which part of the body?" with options
+    "Your back" (mark correct) and "Your hearing". Add question.
+
+10. On the same page, under "Certificate Evaluators", search and add Ravi, then
+    add Priya too.
+    Say: "A course can have several approvers - so a whole team of coordinators
+          shares the sign-off and nobody is a bottleneck."
+    Under "Teachers", search and add Priya.
+    Say: "Same for teaching - multiple authors per course. Adding a teacher also
+          grants them the content-authoring role."
+
+11. Click Content in the top bar -> open Safe Patient Handling -> "+ Add lesson".
+    Chapter: "Module 1 — Foundations". Title: "Lifting a patient safely".
+    YouTube: dQw4w9WgXcQ. Create. (The lesson starts as a Draft.)
+
+12. >>> THE SIGNATURE AUTHORING TOOL <<<
+    Open the lesson, let the video play a few seconds, and click
+    "Pause here & add quiz checkpoint". The video pauses and a form appears
+    pinned to that exact timestamp.
+    Question: "When lifting a patient, what should you bend?"
+    Options: "Your knees" (mark correct) and "Your back". Save checkpoint.
+    Say: "That's the heart of the product - the teacher drops a question right
+          onto the timeline, and the learner can't skip past it."
+    (Add a second checkpoint later in the video if you want to show more than
+     one; edit or delete one to show it's fully editable before anyone answers.)
+
+13. MULTILINGUAL: on that checkpoint, open "Translations", choose Hindi from
+    "Select a language...", type the question and options in Hindi (keep the
+    correct one FIRST), and "Save translation".
+    Say: "Shatam teaches across languages. One video, and the on-screen quiz
+          appears in the learner's own language - we'll see Asha get it in Hindi."
+
+14. Click "Submit for review", then go to Review in the top bar. The lesson is
+    pending - click Approve.
+    Say: "Nothing a teacher writes goes live until it's reviewed - a simple
+          draft -> review -> publish safeguard."
+    (To show the other side, click Reject instead; it returns to the teacher,
+     editable, then re-submit and approve.)
+
+15. Go to Courses -> open Safe Patient Handling -> Publish.
+    Say: "Now it's live and enrollable."
 
 
-WHAT IS DELIBERATELY NOT HERE YET  (be upfront if asked)
-  - No self-service signup - an admin creates every account today.
-  - Branding is placeholder: green colours, no logo, stock certificate design.
-  - Final-assessment questions can't yet be translated from the UI (the in-video
-    checkpoints can, as shown in Act 2).
+====================================================================
+ ACT 3 - ENROL THE CAREGIVER   (as Administrator)
+====================================================================
+16. Click People. On Asha's row, click "Enrol in course", pick Safe Patient
+    Handling, Enrol.
+    Say: "That's the enrolment flow - the coordinator puts the caregiver into
+          the course. The caregiver just logs in and finds it waiting."
 
+
+====================================================================
+ ACT 4 - THE DELEGATED-STAFF EXPERIENCE   (quick, but it lands hard)
+====================================================================
+17. Sign out. Log in as ravi@example.com / Appr-Demo-42.
+    The top bar shows ONLY "Approvals" - no Courses, Content, People, Review,
+    nothing else.
+    Say: "This is the whole promise of the permission model - Ravi sees exactly
+          his one job and nothing he could break."
+
+18. Sign out. Log in as priya@example.com / Coord-Demo-42.
+    Now the bar shows Content, Courses, People, Groups, Review, Approvals - but
+    NO learner tabs.
+    Say: "Priya has the full staff toolkit. Notice staff are never shown the
+          learner's course/certificate tabs - the two worlds stay separate."
+
+
+====================================================================
+ ACT 5 - WHAT THE CAREGIVER EXPERIENCES   (log in as Asha)
+====================================================================
+19. Sign out. Log in as asha@example.com / Learn-Demo-42.
+    She sees only "Courses" and "Certificates" - a clean, low-clutter view.
+
+20. (Optional) Open a course she is NOT enrolled in. She can preview the outline
+    with an "Enroll" button - not a locked error - but can't open lessons until
+    enrolled.
+
+21. Open Safe Patient Handling. Set the Language dropdown to Hindi (it saves
+    immediately).
+    Say: "Asha picks her language once."
+
+22. >>> THE MOMENT THAT SELLS IT <<<
+    Open "Lifting a patient safely". Let the video reach the checkpoint.
+    The video PAUSES and the question appears over it - in HINDI, because that's
+    Asha's language. She cannot continue until she answers.
+    Choose the FIRST option (the "knees" answer) and Submit -> "Correct!" ->
+    Continue watching, and the video resumes.
+    Say: "She just proved she was watching - in her own language. Answers are
+          matched by position, so the grading is language-independent."
+
+23. Reload and play from the start. The question does NOT interrupt again.
+    Say: "First watch only - revising a lesson later is never punished."
+
+24. Let the video finish. It marks the lesson complete, then go back and click
+    "Take assessment". Answer it (the back is what safe lifting protects), submit
+    -> "You passed!" and a note that the certificate is awaiting approval.
+    Say: "Finishing the videos isn't enough - a human still has to approve
+          before a certificate is issued."
+
+25. Click Asha's name (top right) -> My Account. Change her password (wrong
+    current password is refused; the correct one works).
+    Say: "Learners manage their own password - no admin needed for that."
+
+
+====================================================================
+ ACT 6 - APPROVAL AND A VERIFIABLE CERTIFICATE
+====================================================================
+26. Sign out. Log in as priya@example.com -> Approvals. Asha is listed as
+    eligible and pending. Leave this open.
+
+27. In a second window, log in as ravi@example.com -> Approvals.
+    Asha is pending HERE too.
+    Say: "The queue is shared - every approver sees the same list, not a split."
+
+28. As Ravi, click "Approve & issue certificate". The row disappears. Now refresh
+    Priya's Approvals window - Asha is gone there as well.
+    Say: "The instant one coordinator approves, it clears from everyone else's
+          queue. No double-issue, no two people working the same learner."
+
+29. Sign out. Log in as asha@example.com -> Certificates.
+    There's a certificate with an ID like SCF-2026-000001.
+
+30. >>> VERIFIABLE BY ANYONE <<<
+    Click "Verification page" - "Valid Certificate" with name, course and date.
+    Copy that URL into a private/logged-out window: it STILL resolves.
+    Say: "An employer confirms a caregiver's credential with no account and no
+          login. Every certificate also carries a QR code to this page."
+
+31. Click "Download PDF" to show the printable certificate.
+
+
+====================================================================
+ YOU'VE NOW SHOWN THE WHOLE PRODUCT
+====================================================================
+   Permissions & delegation (Acts 1, 4) . groups (Act 1) . course + assessment
+   authoring (Act 2) . multiple teachers/evaluators (Act 2) . in-video
+   checkpoints + the authoring scrubber (Act 2) . multilingual quiz text
+   (Acts 2, 5) . draft->review->publish (Act 2) . admin enrolment (Act 3) .
+   the learner flow with first-watch enforcement (Act 5) . self-service password
+   (Act 5) . shared approval queue (Act 6) . public QR certificate + PDF (Act 6).
+
+BE UPFRONT IF ASKED (not bugs - deliberate v1 scope)
+   - No self-service signup; a coordinator creates each account.
+   - Branding is placeholder - green, no logo, stock certificate design.
+   - Final-assessment questions can't yet be translated from the UI (the
+     in-video checkpoints can, as shown in Act 2/5).
+
+IF SOMETHING MISBEHAVES MID-DEMO
+   Have a backup private window logged in as Administrator.
+   Backend logs: docker compose logs --tail 100 frappe
 
 WHEN DONE
-  docker compose stop        (keeps everything; "start" brings it back in seconds)
-  Do NOT use "docker compose down" - it discards the running setup.
+   docker compose stop     (keeps everything; "start" brings it back in seconds)
+   Do NOT use "docker compose down" - it discards the running setup.
