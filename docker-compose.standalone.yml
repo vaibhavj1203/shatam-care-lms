@@ -100,7 +100,6 @@ services:
     working_dir: /home/frappe
     volumes:
       - source:/workspace
-      - ./init.sh:/workspace/init.sh:ro
       - bench:/home/frappe/frappe-bench
     ports:
       - 8000:8000
