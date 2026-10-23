@@ -2,7 +2,7 @@
 # Provision and start the Frappe backend. Safe to run repeatedly: every step
 # below is guarded, so `docker compose up` works identically on a first run and
 # on the hundredth.
-set -euo pipefail
+set -o pipefail
 
 BENCH=/home/frappe/frappe-bench
 SITE=lms.localhost
@@ -130,6 +130,9 @@ import json, sys
 try:
     import pymysql
     cfg = json.load(open(f"sites/{sys.argv[1]}/site_config.json"))
+    cfg["db_ssl_ca"] = ""
+    with open(config_path, "w") as f:
+        json.dump(cfg, f, indent=4)
     conn = pymysql.connect(
         host="mariadb", user=cfg["db_name"], password=cfg["db_password"],
         database=cfg["db_name"], connect_timeout=10,

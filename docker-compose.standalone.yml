@@ -64,6 +64,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --skip-character-set-client-handshake
       - --skip-innodb-read-only-compressed
+      - --ssl=0
     environment:
       MYSQL_ROOT_PASSWORD: 123
     volumes:
@@ -93,6 +94,7 @@ services:
       - LMS_REPO=${LMS_REPO:-}
       - LMS_BRANCH=${LMS_BRANCH:-}
       - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-}
+      - UV_HTTP_TIMEOUT=120
     working_dir: /home/frappe
     volumes:
       - source:/workspace
