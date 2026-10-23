@@ -130,9 +130,6 @@ import json, sys
 try:
     import pymysql
     cfg = json.load(open(f"sites/{sys.argv[1]}/site_config.json"))
-    cfg["db_ssl_ca"] = ""
-    with open(config_path, "w") as f:
-        json.dump(cfg, f, indent=4)
     conn = pymysql.connect(
         host="mariadb", user=cfg["db_name"], password=cfg["db_password"],
         database=cfg["db_name"], connect_timeout=10,
