@@ -55,9 +55,12 @@ services:
     # bare "SyntaxError: invalid syntax" on modern type-alias syntax.
     command: >
       bash -c "chown -R frappe:frappe /home/frappe/frappe-bench &&
+               printf '[client]\\nskip-ssl\\n' > /home/frappe/.my.cnf &&
+               chown frappe:frappe /home/frappe/.my.cnf &&
                exec su frappe -c 'bash /workspace/init.sh'"
     environment:
       - SHELL=/bin/bash
+      - UV_HTTP_TIMEOUT=120
       # Where init.sh fetches the lms app from. Defaults to the public fork;
       # set LMS_REPO=/workspace/shatam-care-lms in your shell to use a local
       # checkout instead (much faster on rebuilds).
