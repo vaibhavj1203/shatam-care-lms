@@ -14,12 +14,11 @@ except where noted.
   "Shatam Care Foundation" set as `Website Settings.app_name` on the backend
   (`shatam_care/install.py`, runs on app install) — this is what the stock
   `Certificate` print format displays on issued certificates.
-- **Certificate template**: reusing stock `lms`'s existing `Certificate`
-  Print Format (`lms/lms/print_format/certificate`) rather than building a
-  new one from scratch — it already pulls `app_name` and `banner_image` from
-  Website Settings, is well-designed, and just needs real assets swapped in
-  (see below). Certificates are NOT using the generic "Standard" Frappe
-  print format — that was a bug caught and fixed during this build (see
+- **Certificate template**: the "Shatam Certificate" Print Format
+  (`shatam_care/print_format/shatam_certificate/`), with an admin-uploadable
+  background (see below). It replaced the stock `lms` `Certificate` format,
+  which is only a fallback if the Shatam one is missing. Certificates must
+  never use the generic "Standard" Frappe print format (see
   `certificate_issuance.py`).
 - **App icon**: `hooks.py` references `/assets/shatam_care/images/shatam-care-logo.png`,
   which **does not exist yet** — no placeholder image was faked in its
@@ -40,11 +39,13 @@ Settings, done via the desk UI) or file replacement:
    utility class, no hardcoded hex values to hunt down, but there's no
    central theme file yet (a `tailwind.config` color extension would be the
    right refactor once real colors are known, rather than a find-replace).
-3. **Certificate design**: once Shatam provides an actual certificate
-   template/design, either restyle the reused `Certificate` Print Format's
-   CSS/HTML, or replace it entirely — `certificate_issuance.py`'s
-   `get_certificate_template()` already supports swapping in per-language
-   Print Formats named `Shatam Certificate - <Language>` without further
-   code changes.
+3. **Certificate design**: an admin uploads the background image in the web
+   app (Certificate template, `/admin/certificates`): A4 landscape PNG/JPG,
+   ideally 3508 x 2480 px, with the centre left empty. The built-in default is
+   `shatam_care/public/images/certificate-background-default.png`. The learner
+   details are printed over it by the "Shatam Certificate" Print Format; to
+   move or add fields, edit that Print Format
+   (`shatam_care/print_format/shatam_certificate/`) and keep it in step with
+   the design.
 4. **Favicon**: still Next.js's default `favicon.ico` in
    `shatam-care-web/src/app/` — untouched.

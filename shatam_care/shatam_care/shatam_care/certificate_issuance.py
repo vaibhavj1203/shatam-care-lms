@@ -10,6 +10,8 @@ import frappe
 from frappe.utils import now_datetime
 from frappe.utils.file_manager import save_file
 
+from shatam_care.shatam_care.certificate_template import PRINT_FORMAT
+
 
 def issue_certificate(member, course, evaluator):
 	enrollment = frappe.db.get_value(
@@ -32,21 +34,21 @@ def issue_certificate(member, course, evaluator):
 	return certificate
 
 
-def get_certificate_template(course, language):
-	"""Per-language certificate variant, per SCHEMA.md: one Print Format per
-	language, named "Shatam Certificate - <Language>". Falls back to stock
-	lms's own "Certificate" print format (lms/lms/print_format/certificate),
-	which already pulls branding (logo/name) from Website Settings — a
-	placeholder until Shatam-specific per-language templates are designed
-	with real brand assets. Do NOT fall back to "Standard": that's Frappe's
-	generic list-of-fields dump, not a certificate layout at all."""
-	if language:
-		language_specific = frappe.db.get_value(
-			"Print Format", {"name": ["like", f"Shatam Certificate - {language}%"]}, "name"
-		)
-		if language_specific:
-			return language_specific
-	return frappe.db.get_value("Print Format", "Shatam Certificate - Default", "name") or "Certificate"
+def get_certificate_template(course=None, language=None):
+	"""Every certificate uses the one "Shatam Certificate" Print Format.
+
+	What an admin customises is not the Print Format but the background image
+	and signatory text it reads at render time (Shatam Certificate Settings, see
+	certificate_template.py). So a new upload applies to all certificates, old
+	and new, and there is no per-course or per-language choice to make here.
+	`course` and `language` are kept so callers need not change.
+
+	Falls back to stock lms's "Certificate" only if the Shatam format is missing
+	(e.g. before the first migrate). Never "Standard": that's Frappe's generic
+	list-of-fields dump, not a certificate layout at all."""
+	if frappe.db.exists("Print Format", PRINT_FORMAT):
+		return PRINT_FORMAT
+	return "Certificate"
 
 
 def generate_certificate_uid():

@@ -110,6 +110,41 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 	return (body.message ?? body.data ?? body) as T;
 }
 
+// Multipart upload to Frappe's stock upload_file endpoint. Public (not
+// private) so the file can later be read back by URL. Content-Type is left for
+// the browser to set: it has to carry the multipart boundary.
+export async function uploadPublicFile(file: File): Promise<string> {
+	const token = loadToken();
+	const form = new FormData();
+	form.append("file", file, file.name);
+	form.append("is_private", "0");
+	const response = await fetch(`${FRAPPE_URL}/api/method/upload_file`, {
+		method: "POST",
+		headers: token ? { Authorization: `token ${token.apiKey}:${token.apiSecret}` } : {},
+		body: form,
+	});
+	if (!response.ok) {
+		const body = await response.json().catch(() => ({}));
+		throw new FrappeApiError(extractErrorMessage(body, response.statusText), response.status);
+	}
+	const body = await response.json();
+	return body.message.file_url as string;
+}
+
+// GET a binary response (e.g. a PDF) with token auth, which a plain link or
+// iframe cannot send.
+export async function fetchBlob(path: string): Promise<Blob> {
+	const token = loadToken();
+	const response = await fetch(`${FRAPPE_URL}${path}`, {
+		headers: token ? { Authorization: `token ${token.apiKey}:${token.apiSecret}` } : {},
+	});
+	if (!response.ok) {
+		const body = await response.json().catch(() => ({}));
+		throw new FrappeApiError(extractErrorMessage(body, response.statusText), response.status);
+	}
+	return response.blob();
+}
+
 export async function login(usr: string, pwd: string): Promise<AuthToken> {
 	const result = await request<{
 		api_key: string;

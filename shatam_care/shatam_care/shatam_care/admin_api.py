@@ -19,6 +19,17 @@ from shatam_care.shatam_care.capabilities import (
 	is_admin,
 	set_capabilities,
 )
+from shatam_care.shatam_care.certificate_template import (
+	DEFAULT_BACKGROUND,
+	MAX_BYTES,
+	MIN_WIDTH_PX,
+	SETTINGS_DOCTYPE,
+	TARGET_HEIGHT_PX,
+	TARGET_WIDTH_PX,
+	get_settings,
+	render_preview_pdf,
+	validate_background_image,
+)
 
 ADMIN_ROLES = ("System Manager", "Moderator")
 
@@ -583,3 +594,102 @@ def _ensure_role(user, role):
 	if not any(row.role == role for row in user_doc.roles):
 		user_doc.append("roles", {"role": role})
 		user_doc.save(ignore_permissions=True)
+
+
+# --- Certificate template ------------------------------------------------------
+#
+# Admin-only (not a delegable capability): changing the certificate changes
+# every certificate already issued, so it stays with full admins.
+
+TEXT_FIELD_MAX_LENGTH = 140
+
+
+@frappe.whitelist()
+def get_certificate_settings():
+	check_admin()
+	settings = get_settings()
+	return {
+		"background_url": settings["background"],
+		"using_default": not settings["background"],
+		"default_background_url": "/assets/shatam_care/" + "/".join(DEFAULT_BACKGROUND[1:]),
+		"certificate_title": settings["certificate_title"],
+		"signatory_name": settings["signatory_name"],
+		"signatory_title": settings["signatory_title"],
+		"requirements": {
+			"width_px": TARGET_WIDTH_PX,
+			"height_px": TARGET_HEIGHT_PX,
+			"min_width_px": MIN_WIDTH_PX,
+			"max_mb": MAX_BYTES // (1024 * 1024),
+		},
+	}
+
+
+@frappe.whitelist()
+def set_certificate_background(file_url):
+	"""Make an already-uploaded image the certificate background.
+
+	The browser uploads the file first (Frappe's upload_file) and then calls this
+	with its URL, so the image can be checked before it goes live. A rejected
+	file is deleted rather than left in the File list.
+	"""
+	check_admin()
+	file_name = frappe.db.get_value("File", {"file_url": file_url, "is_private": 0}, "name")
+	if not file_name:
+		frappe.throw(_("Upload the image first, then apply it."))
+
+	try:
+		validate_background_image(frappe.get_doc("File", file_name).get_content())
+	except frappe.ValidationError:
+		frappe.delete_doc("File", file_name, ignore_permissions=True, force=True)
+		# Frappe rolls the transaction back when an error propagates, which would
+		# undo the delete just made; commit it first.
+		frappe.db.commit()
+		raise
+
+	settings = frappe.get_single(SETTINGS_DOCTYPE)
+	settings.background = file_url
+	settings.save(ignore_permissions=True)
+	return get_certificate_settings()
+
+
+@frappe.whitelist()
+def reset_certificate_background():
+	"""Go back to the built-in design."""
+	check_admin()
+	settings = frappe.get_single(SETTINGS_DOCTYPE)
+	settings.background = None
+	settings.save(ignore_permissions=True)
+	return get_certificate_settings()
+
+
+@frappe.whitelist()
+def update_certificate_text(certificate_title=None, signatory_name=None, signatory_title=None):
+	"""Set the fixed text printed on every certificate.
+
+	None leaves a value unchanged; an empty string clears it (the title then
+	falls back to its default, the signatory to the course evaluator).
+	"""
+	check_admin()
+	settings = frappe.get_single(SETTINGS_DOCTYPE)
+	for fieldname, value in (
+		("certificate_title", certificate_title),
+		("signatory_name", signatory_name),
+		("signatory_title", signatory_title),
+	):
+		if value is None:
+			continue
+		value = " ".join(str(value).split())
+		if len(value) > TEXT_FIELD_MAX_LENGTH:
+			frappe.throw(_("Please keep each line under {0} characters.").format(TEXT_FIELD_MAX_LENGTH))
+		settings.set(fieldname, value)
+	settings.save(ignore_permissions=True)
+	return get_certificate_settings()
+
+
+@frappe.whitelist()
+def preview_certificate():
+	"""A sample certificate PDF built from the current settings, nothing saved."""
+	check_admin()
+	frappe.local.response.filename = "certificate-preview.pdf"
+	frappe.local.response.filecontent = render_preview_pdf()
+	frappe.local.response.type = "pdf"

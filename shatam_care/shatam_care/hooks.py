@@ -32,6 +32,14 @@ doc_events = {
 	},
 }
 
+# Makes `shatam_certificate_context(doc)` callable from the "Shatam Certificate"
+# Print Format (see shatam_care/print_format/ and certificate_template.py).
+jinja = {
+	"methods": [
+		"shatam_care.shatam_care.certificate_template.shatam_certificate_context",
+	],
+}
+
 permission_query_conditions = {
 	"LMS Certificate Eligibility": "shatam_care.shatam_care.permissions.certificate_eligibility_query_conditions",
 }

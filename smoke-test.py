@@ -275,6 +275,38 @@ def main():
     except Exception as e:  # noqa: BLE001
         log(False, "public /verify page", str(e)[:200])
 
+    # --- certificate template (admin-managed background) --------------------
+    if certs:
+        cert_doc = call(None, admin, raw_path=resource("LMS Certificate") + "/" + urllib.parse.quote(certs[0]["name"]))
+        log(cert_doc.get("template") == "Shatam Certificate",
+            "issued certificate uses the Shatam Certificate format", cert_doc.get("template"))
+
+    cfg = call("shatam_care.shatam_care.admin_api.get_certificate_settings", admin)
+    log(cfg.get("requirements", {}).get("width_px") == 3508, "admin can read certificate settings", cfg)
+
+    denied = call("shatam_care.shatam_care.admin_api.get_certificate_settings", stok, expect_error=True)
+    log("_error" in denied, "student cannot read certificate settings", denied)
+
+    saved = call("shatam_care.shatam_care.admin_api.update_certificate_text", admin,
+                 {"certificate_title": "Certificate of Completion"})
+    log(saved.get("certificate_title") == "Certificate of Completion", "admin can update certificate text", saved)
+
+    bad = call("shatam_care.shatam_care.admin_api.set_certificate_background", admin,
+               {"file_url": "/files/does-not-exist.png"}, expect_error=True)
+    log("_error" in bad, "applying a file that was never uploaded is rejected", bad)
+
+    # The preview is a PDF, not JSON, so it can't go through call(). It also
+    # needs the PDF engine (wkhtmltopdf) inside the frappe container.
+    try:
+        req = urllib.request.Request(
+            BASE + "/api/method/shatam_care.shatam_care.admin_api.preview_certificate",
+            headers={"Authorization": f"token {admin['api_key']}:{admin['api_secret']}"},
+        )
+        with urllib.request.urlopen(req, timeout=120) as r:
+            log(r.read(4) == b"%PDF", "certificate preview renders a PDF")
+    except Exception as e:  # noqa: BLE001
+        log(False, "certificate preview renders a PDF", str(e)[:200])
+
     print(f"\npassed: {passed}   failed: {failed}")
     return 1 if failed else 0
 
