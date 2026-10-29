@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FRAPPE_URL } from "@/lib/frappe-client";
-import { MyCertificate, getMyCertificates } from "@/lib/lms-api";
+import { CERTIFICATE_PRINT_FORMAT, MyCertificate, getMyCertificates } from "@/lib/lms-api";
 
 export default function CertificatesPage() {
 	const [rows, setRows] = useState<MyCertificate[] | null>(null);
@@ -50,7 +50,7 @@ export default function CertificatesPage() {
 								Verification page
 							</a>
 							<a
-								href={`${FRAPPE_URL}/api/method/frappe.utils.print_format.download_pdf?doctype=LMS%20Certificate&name=${encodeURIComponent(row.name)}&format=Certificate`}
+								href={`${FRAPPE_URL}/api/method/frappe.utils.print_format.download_pdf?doctype=LMS%20Certificate&name=${encodeURIComponent(row.name)}&format=${encodeURIComponent(CERTIFICATE_PRINT_FORMAT)}`}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-green-700 underline"

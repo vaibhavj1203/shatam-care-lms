@@ -1,6 +1,6 @@
 // Domain-specific helpers on top of frappe-client.ts, scoped to what the
 // student/teacher/admin/evaluator flows need (PLAN.md sections 3.1-3.8).
-import { Capability, callMethod, createDoc, getDoc, getList } from "./frappe-client";
+import { Capability, callMethod, createDoc, fetchBlob, getDoc, getList, uploadPublicFile } from "./frappe-client";
 
 export type { Capability };
 
@@ -763,4 +763,54 @@ export function createStudentGroup(data: {
 		"shatam_care.shatam_care.admin_api.create_student_group",
 		data as unknown as Record<string, unknown>,
 	);
+}
+
+// --- Certificate template (admin_api.py) ---
+
+// The one Print Format every certificate renders with. What an admin changes is
+// the background image and text it reads, not which format is used, so students
+// download with this name no matter when their certificate was issued.
+export const CERTIFICATE_PRINT_FORMAT = "Shatam Certificate";
+
+export type CertificateSettings = {
+	/** URL of the uploaded background, or "" when the built-in design is used. */
+	background_url: string;
+	using_default: boolean;
+	default_background_url: string;
+	certificate_title: string;
+	signatory_name: string;
+	signatory_title: string;
+	requirements: { width_px: number; height_px: number; min_width_px: number; max_mb: number };
+};
+
+export function getCertificateSettings() {
+	return callMethod<CertificateSettings>("shatam_care.shatam_care.admin_api.get_certificate_settings");
+}
+
+// Two steps so the server can check the image before it goes live: upload the
+// file, then ask for it to be applied (the server deletes it if it is unsuitable).
+export async function uploadCertificateBackground(file: File) {
+	const fileUrl = await uploadPublicFile(file);
+	return callMethod<CertificateSettings>("shatam_care.shatam_care.admin_api.set_certificate_background", {
+		file_url: fileUrl,
+	});
+}
+
+export function resetCertificateBackground() {
+	return callMethod<CertificateSettings>("shatam_care.shatam_care.admin_api.reset_certificate_background", {});
+}
+
+export function updateCertificateText(data: {
+	certificate_title: string;
+	signatory_name: string;
+	signatory_title: string;
+}) {
+	return callMethod<CertificateSettings>(
+		"shatam_care.shatam_care.admin_api.update_certificate_text",
+		data as unknown as Record<string, unknown>,
+	);
+}
+
+export function fetchCertificatePreview() {
+	return fetchBlob("/api/method/shatam_care.shatam_care.admin_api.preview_certificate");
 }

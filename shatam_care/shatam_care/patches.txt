@@ -3,3 +3,5 @@
 [post_model_sync]
 # Runs after doctypes/custom fields sync, so shatam_evaluators exists.
 shatam_care.patches.backfill_course_evaluators
+# Needs the "Shatam Certificate" Print Format, which model sync has just imported.
+shatam_care.patches.use_shatam_certificate_format

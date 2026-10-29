@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "creation": "2026-10-29 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "background",
+  "background_help",
+  "section_text",
+  "certificate_title",
+  "signatory_name",
+  "signatory_title"
+ ],
+ "fields": [
+  {
+   "fieldname": "background",
+   "fieldtype": "Attach Image",
+   "label": "Certificate Background",
+   "description": "A4 landscape image (3508 x 2480 px). Leave empty to use the built-in Shatam Care design."
+  },
+  {
+   "fieldname": "background_help",
+   "fieldtype": "HTML",
+   "label": "Help",
+   "options": "<p>Upload from the Shatam Care app (Admin &rarr; Certificates) rather than here: the app validates the size and shape of the image.</p>"
+  },
+  {
+   "fieldname": "section_text",
+   "fieldtype": "Section Break",
+   "label": "Text on the certificate"
+  },
+  {
+   "fieldname": "certificate_title",
+   "fieldtype": "Data",
+   "label": "Certificate Title",
+   "default": "Certificate of Completion"
+  },
+  {
+   "fieldname": "signatory_name",
+   "fieldtype": "Data",
+   "label": "Signatory Name",
+   "description": "Printed under the signature line. Leave empty to print the course evaluator's name."
+  },
+  {
+   "fieldname": "signatory_title",
+   "fieldtype": "Data",
+   "label": "Signatory Title"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shatam Care",
+ "name": "Shatam Certificate Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Moderator",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

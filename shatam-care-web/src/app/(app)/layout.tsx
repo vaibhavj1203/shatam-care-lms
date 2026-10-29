@@ -38,6 +38,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
 					)}
 					{can("review") && <Link href="/admin/reviews">Review</Link>}
 					{can("certificates") && <Link href="/evaluate">Approvals</Link>}
+					{user.isAdmin && <Link href="/admin/certificates">Certificate template</Link>}
 					{isLearner && (
 						<>
 							{/* Student views come AFTER the admin/evaluator tabs: staff who

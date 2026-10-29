@@ -143,17 +143,18 @@ below) — a group is just a tag a student record points to.
 | `Course Lesson` | `review_notes` | Small Text | admin feedback to teacher |
 | `Course Lesson` | `submitted_on` / `reviewed_on` | Datetime | |
 | `LMS Quiz` | `is_final_assessment` | Check | marks the one quiz per course that gates certificate eligibility; validated in controller (only one per course) |
-| `LMS Enrollment` | `preferred_language` | Link → Language | drives which checkpoint/question translation and which certificate Print Format variant is used |
+| `LMS Enrollment` | `preferred_language` | Link → Language | drives which checkpoint/question translation is shown |
 | `LMS Enrollment` | `student_group` | Link → LMS Student Group | admin reporting tag, optional |
 | `LMS Certificate` | `certificate_uid` | Data, unique | public-facing short ID, e.g. `SCF-2026-000123` |
 | `LMS Certificate` | `verification_url` | Data, read-only | auto-computed from `certificate_uid` |
 | `LMS Certificate` | `qr_code` | Attach Image | generated at issue-time, encodes `verification_url` |
 
 Note: `LMS Certificate` already has `evaluator` and `template` (Print Format)
-fields — the `template` link is exactly the mechanism we'll use for
-per-language certificate variants (one Print Format per language, selected
-by the student's `preferred_language` at issue time), so no new
-certificate-text-variant data model is needed.
+fields. Every certificate now uses the single "Shatam Certificate" Print
+Format (per-language variants were dropped). What an admin customises lives in
+the single doctype `Shatam Certificate Settings` (background image, title,
+signatory name/title), which the Print Format reads when it renders — so a
+change applies to certificates already issued as well as new ones.
 
 ## Public verification page
 

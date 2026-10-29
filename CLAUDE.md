@@ -56,7 +56,15 @@ HTTP surface:
   progress or a quiz submission changes; flips a learner to
   `Eligible - Pending Approval` once all lessons + all checkpoints + a passing final
   assessment exist. Also holds evaluator approve/reject.
-- `certificate_issuance.py` — UID (`SCF-YYYY-NNNNNN`), QR, per-language print format.
+- `certificate_issuance.py` — UID (`SCF-YYYY-NNNNNN`), QR; always uses the one
+  "Shatam Certificate" print format.
+- `certificate_template.py` — what that print format reads at render time (background
+  image + signatory text from the single `Shatam Certificate Settings`) and the
+  validation for uploaded backgrounds. Admins change the look from the web app
+  (`/admin/certificates`, backed by `admin_api.py`); a change applies to every
+  certificate, issued or not. The layout is fixed in
+  `shatam_care/print_format/shatam_certificate/`; text positions there are in mm
+  and match the shape of the background image.
 - `assessment.py` — final assessment lookup/submit (wraps stock LMS).
 - `translations.py` — overlays per-language text onto checkpoints and questions.
 - `content_review.py` — Draft → Submitted → Approved/Rejected for teacher lessons.
