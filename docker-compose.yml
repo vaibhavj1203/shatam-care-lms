@@ -53,10 +53,16 @@ services:
     # resets PATH and loses pyenv, so python3 becomes the system 3.11 instead of
     # the image's 3.14 — and frappe's develop branch fails to install with a
     # bare "SyntaxError: invalid syntax" on modern type-alias syntax.
+    # Also installs the system libraries Chromium needs to render PDFs (certificates):
+    # frappe/bench ships without them, and on machines where PlutoPrint is not
+    # available Frappe falls back to Chromium. Skipped once they are present.
     command: >
       bash -c "chown -R frappe:frappe /home/frappe/frappe-bench &&
                printf '[client]\\nskip-ssl\\n' > /home/frappe/.my.cnf &&
                chown frappe:frappe /home/frappe/.my.cnf &&
+               (dpkg -s libatk-bridge2.0-0 >/dev/null 2>&1 ||
+                (apt-get update && apt-get install -y --no-install-recommends libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 libnss3 libxshmfence1 libx11-xcb1) ||
+                echo 'WARNING: could not install the Chromium libraries; PDF generation may fail') &&
                exec su frappe -c 'bash /workspace/init.sh'"
     environment:
       - SHELL=/bin/bash
