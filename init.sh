@@ -185,6 +185,13 @@ FRONTEND_ORIGIN="${FRONTEND_ORIGIN:-http://localhost:3000}"
 bench --site "$SITE" set-config --parse allow_cors \
     "[\"$FRONTEND_ORIGIN\", \"http://localhost:3000\", \"http://localhost:3900\"]"
 
+# Frappe waits only 10s for headless Chromium (the PDF engine, used for
+# certificates) to start. The first start in a container on a slow or low-memory
+# machine takes longer, and the PDF request fails with a "bus.cc ... dbus" message
+# that is really the tail of a timeout error. --parse stores a number: without it
+# the value is saved as text and the timeout comparison fails.
+bench --site "$SITE" set-config --parse chromium_start_timeout 120
+
 # Applies doctype, custom field and property setter changes from the source
 # refreshed above, so a restart is all that's needed after editing the app.
 echo "==> Running migrations"
